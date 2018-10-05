@@ -37,9 +37,9 @@ import (
 )
 
 var account = map[string]string{
-	"testfkdr2": "MovjMUm3OpM0gmvycfsndltnRIbmRQaV9yKGoK3NA/GW3Fmich7Vv23AFoo9kkydwGS2z68p5ghlnXzvMoGpFw==",
-	"testfkdr" : "vn/x+90Kw7aR+Gn4GvCy5VHwU4pCn+zuSvN9E95lu8ZoFuXpE0cTnbE2a7lqg8pPzsphR9GM2Rtl+gHgcD2eQA==",
-	"dummytestfkdr":"PoKbvBi7F0geERqfceFn1XP4/vlDrEei980CQPpnjlrhQZO7PAVJWYhN7KIuxYkEJWLBJDMkcy3uboVGlujimw==",
+	"testfkdr2": "dummy1",
+	"testfkdr" : "dummy2",
+	"dummytestfkdr":"dummy3",
 }
 // Check for updates and print a notification message
 func checkUpdate(mode string) {
