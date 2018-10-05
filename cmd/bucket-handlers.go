@@ -83,16 +83,44 @@ func initFederatorBackend(objLayer ObjectLayer) {
 	}
 }
 
+/*
+My mapper
+ */
+func myMapper(bucket string)(string){
+	//bucket ="5283875-shakti-dirtree"
+	return bucket
+}
+//
+func extractAccName(r *http.Request) string {
+	v2Auth := r.Header.Get("Authorization")
+	authFields := strings.Split(v2Auth, " ")
+	keySignFields := strings.Split(strings.TrimSpace(authFields[1]), ":")
+	return keySignFields[0]
+}
+
+//// formatRequest generates ascii representation of a request
+//func formatResponse(resp http.ResponseWriter) {
+//	for k, v := range resp.Header() {
+//		fmt.Print(k)
+//		fmt.Print(": ")
+//		fmt.Println(v)
+//	}
+//}
 // GetBucketLocationHandler - GET Bucket location.
 // -------------------------
 // This operation returns bucket location.
 func (api objectAPIHandlers) GetBucketLocationHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("___GetBucketLocationHandler___")
+	fmt.Println(printRequest(r))
+
 	ctx := newContext(r, w, "GetBucketLocation")
 
 	vars := mux.Vars(r)
 	bucket := vars["bucket"]
-
-	objectAPI := api.ObjectAPI()
+	bucket = myMapper(bucket)
+	m := extractAccName(r)
+	objectAPI := api.ObjectAPI(m)
+	fmt.Println(objectAPI)
 	if objectAPI == nil {
 		writeErrorResponse(w, ErrServerNotInitialized, r.URL)
 		return
@@ -104,8 +132,8 @@ func (api objectAPIHandlers) GetBucketLocationHandler(w http.ResponseWriter, r *
 	}
 
 	getBucketInfo := objectAPI.GetBucketInfo
-	if api.CacheAPI() != nil {
-		getBucketInfo = api.CacheAPI().GetBucketInfo
+	if api.CacheAPI(m) != nil {
+		getBucketInfo = api.CacheAPI(m).GetBucketInfo
 	}
 	if _, err := getBucketInfo(ctx, bucket); err != nil {
 		writeErrorResponse(w, toAPIErrorCode(err), r.URL)
@@ -122,6 +150,7 @@ func (api objectAPIHandlers) GetBucketLocationHandler(w http.ResponseWriter, r *
 		})
 	}
 
+	//formatResponse(w)
 	// Write success response.
 	writeSuccessResponseXML(w, encodedSuccessResponse)
 }
@@ -135,12 +164,17 @@ func (api objectAPIHandlers) GetBucketLocationHandler(w http.ResponseWriter, r *
 // uploads in the response.
 //
 func (api objectAPIHandlers) ListMultipartUploadsHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := newContext(r, w, "ListMultipartUploads")
+	fmt.Println("___ListMultipartUploadsHandler___")
+	fmt.Println(printRequest(r))
 
+	ctx := newContext(r, w, "ListMultipartUploads")
+	//fmt.Println(formatRequest(r))
 	vars := mux.Vars(r)
 	bucket := vars["bucket"]
+	bucket = myMapper(bucket)
+	m := extractAccName(r)
 
-	objectAPI := api.ObjectAPI()
+	objectAPI := api.ObjectAPI(m)
 	if objectAPI == nil {
 		writeErrorResponse(w, ErrServerNotInitialized, r.URL)
 		return
@@ -173,6 +207,7 @@ func (api objectAPIHandlers) ListMultipartUploadsHandler(w http.ResponseWriter, 
 	response := generateListMultipartUploadsResponse(bucket, listMultipartsInfo)
 	encodedSuccessResponse := encodeResponse(response)
 
+	//formatResponse(w)
 	// write success response.
 	writeSuccessResponseXML(w, encodedSuccessResponse)
 }
@@ -182,17 +217,21 @@ func (api objectAPIHandlers) ListMultipartUploadsHandler(w http.ResponseWriter, 
 // This implementation of the GET operation returns a list of all buckets
 // owned by the authenticated sender of the request.
 func (api objectAPIHandlers) ListBucketsHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := newContext(r, w, "ListBuckets")
+	fmt.Println("___ListBucketHandler___")
+	fmt.Println(printRequest(r))
 
-	objectAPI := api.ObjectAPI()
+	ctx := newContext(r, w, "ListBuckets")
+	m := extractAccName(r)
+
+	objectAPI := api.ObjectAPI(m)
 	if objectAPI == nil {
 		writeErrorResponse(w, ErrServerNotInitialized, r.URL)
 		return
 	}
 	listBuckets := objectAPI.ListBuckets
 
-	if api.CacheAPI() != nil {
-		listBuckets = api.CacheAPI().ListBuckets
+	if api.CacheAPI(m) != nil {
+		listBuckets = api.CacheAPI(m).ListBuckets
 	}
 
 	if s3Error := checkRequestAuthType(ctx, r, policy.ListAllMyBucketsAction, "", ""); s3Error != ErrNone {
@@ -233,17 +272,23 @@ func (api objectAPIHandlers) ListBucketsHandler(w http.ResponseWriter, r *http.R
 	encodedSuccessResponse := encodeResponse(response)
 
 	// Write response.
+	//formatResponse(w)
 	writeSuccessResponseXML(w, encodedSuccessResponse)
 }
 
 // DeleteMultipleObjectsHandler - deletes multiple objects.
 func (api objectAPIHandlers) DeleteMultipleObjectsHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("___DeleteMultipleObjectHandler___")
+	fmt.Println(printRequest(r))
+
 	ctx := newContext(r, w, "DeleteMultipleObjects")
 
 	vars := mux.Vars(r)
 	bucket := vars["bucket"]
+	bucket = myMapper(bucket)
+	m := extractAccName(r)
 
-	objectAPI := api.ObjectAPI()
+	objectAPI := api.ObjectAPI(m)
 	if objectAPI == nil {
 		writeErrorResponse(w, ErrServerNotInitialized, r.URL)
 		return
@@ -306,8 +351,8 @@ func (api objectAPIHandlers) DeleteMultipleObjectsHandler(w http.ResponseWriter,
 	}
 
 	deleteObject := objectAPI.DeleteObject
-	if api.CacheAPI() != nil {
-		deleteObject = api.CacheAPI().DeleteObject
+	if api.CacheAPI(m) != nil {
+		deleteObject = api.CacheAPI(m).DeleteObject
 	}
 
 	var dErrs = make([]error, len(deleteObjects.Objects))
@@ -382,9 +427,13 @@ func (api objectAPIHandlers) DeleteMultipleObjectsHandler(w http.ResponseWriter,
 // ----------
 // This implementation of the PUT operation creates a new bucket for authenticated request
 func (api objectAPIHandlers) PutBucketHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := newContext(r, w, "PutBucket")
+	fmt.Println("__PutBucketLocationHandler___")
+	fmt.Println(printRequest(r))
 
-	objectAPI := api.ObjectAPI()
+	ctx := newContext(r, w, "PutBucket")
+	m := extractAccName(r)
+
+	objectAPI := api.ObjectAPI(m)
 	if objectAPI == nil {
 		writeErrorResponse(w, ErrServerNotInitialized, r.URL)
 		return
@@ -392,6 +441,7 @@ func (api objectAPIHandlers) PutBucketHandler(w http.ResponseWriter, r *http.Req
 
 	vars := mux.Vars(r)
 	bucket := vars["bucket"]
+	bucket = myMapper(bucket)
 
 	if s3Error := checkRequestAuthType(ctx, r, policy.CreateBucketAction, bucket, ""); s3Error != ErrNone {
 		writeErrorResponse(w, s3Error, r.URL)
@@ -428,7 +478,7 @@ func (api objectAPIHandlers) PutBucketHandler(w http.ResponseWriter, r *http.Req
 
 				// Make sure to add Location information here only for bucket
 				w.Header().Set("Location", getObjectLocation(r, globalDomainName, bucket, ""))
-
+				//formatResponse(w)
 				writeSuccessResponseHeadersOnly(w)
 				return
 			}
@@ -449,7 +499,7 @@ func (api objectAPIHandlers) PutBucketHandler(w http.ResponseWriter, r *http.Req
 
 	// Make sure to add Location information here only for bucket
 	w.Header().Set("Location", path.Clean(r.URL.Path)) // Clean any trailing slashes.
-
+	//formatResponse(w)
 	writeSuccessResponseHeadersOnly(w)
 }
 
@@ -458,15 +508,20 @@ func (api objectAPIHandlers) PutBucketHandler(w http.ResponseWriter, r *http.Req
 // This implementation of the POST operation handles object creation with a specified
 // signature policy in multipart/form-data
 func (api objectAPIHandlers) PostPolicyBucketHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := newContext(r, w, "PostPolicyBucket")
+	fmt.Println("PostPolicyBucketHandler")
+	fmt.Println(printRequest(r))
 
-	objectAPI := api.ObjectAPI()
+	ctx := newContext(r, w, "PostPolicyBucket")
+	m := extractAccName(r)
+
+	objectAPI := api.ObjectAPI(m)
 	if objectAPI == nil {
 		writeErrorResponse(w, ErrServerNotInitialized, r.URL)
 		return
 	}
 
 	bucket := mux.Vars(r)["bucket"]
+	bucket = myMapper(bucket)
 
 	// Require Content-Length to be set in the request
 	size := r.ContentLength
@@ -671,6 +726,7 @@ func (api objectAPIHandlers) PostPolicyBucketHandler(w http.ResponseWriter, r *h
 	default:
 		writeSuccessNoContent(w)
 	}
+	//formatResponse(w)
 }
 
 // HeadBucketHandler - HEAD Bucket
@@ -680,25 +736,30 @@ func (api objectAPIHandlers) PostPolicyBucketHandler(w http.ResponseWriter, r *h
 // have permission to access it. Otherwise, the operation might
 // return responses such as 404 Not Found and 403 Forbidden.
 func (api objectAPIHandlers) HeadBucketHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("___HeadBucketHandler___")
+	fmt.Println(printRequest(r))
+
 	ctx := newContext(r, w, "HeadBucket")
 
 	vars := mux.Vars(r)
 	bucket := vars["bucket"]
+	bucket = myMapper(bucket)
+	m := extractAccName(r)
 
-	objectAPI := api.ObjectAPI()
+	objectAPI := api.ObjectAPI(m)
 	if objectAPI == nil {
 		writeErrorResponseHeadersOnly(w, ErrServerNotInitialized)
 		return
 	}
 
-	if s3Error := checkRequestAuthType(ctx, r, policy.ListBucketAction, bucket, ""); s3Error != ErrNone {
+	if s3Error := checkRequestAuthType(ctx, r, policy.ListBucketAction, bucket,""); s3Error != ErrNone {
 		writeErrorResponseHeadersOnly(w, s3Error)
 		return
 	}
 
 	getBucketInfo := objectAPI.GetBucketInfo
-	if api.CacheAPI() != nil {
-		getBucketInfo = api.CacheAPI().GetBucketInfo
+	if api.CacheAPI(m) != nil {
+		getBucketInfo = api.CacheAPI(m).GetBucketInfo
 	}
 	if _, err := getBucketInfo(ctx, bucket); err != nil {
 		writeErrorResponseHeadersOnly(w, toAPIErrorCode(err))
@@ -714,8 +775,10 @@ func (api objectAPIHandlers) DeleteBucketHandler(w http.ResponseWriter, r *http.
 
 	vars := mux.Vars(r)
 	bucket := vars["bucket"]
+	bucket = myMapper(bucket)
+	m := extractAccName(r)
 
-	objectAPI := api.ObjectAPI()
+	objectAPI := api.ObjectAPI(m)
 	if objectAPI == nil {
 		writeErrorResponse(w, ErrServerNotInitialized, r.URL)
 		return
@@ -727,8 +790,8 @@ func (api objectAPIHandlers) DeleteBucketHandler(w http.ResponseWriter, r *http.
 	}
 
 	deleteBucket := objectAPI.DeleteBucket
-	if api.CacheAPI() != nil {
-		deleteBucket = api.CacheAPI().DeleteBucket
+	if api.CacheAPI(m) != nil {
+		deleteBucket = api.CacheAPI(m).DeleteBucket
 	}
 	// Attempt to delete bucket.
 	if err := deleteBucket(ctx, bucket); err != nil {
@@ -748,7 +811,7 @@ func (api objectAPIHandlers) DeleteBucketHandler(w http.ResponseWriter, r *http.
 			return
 		}
 	}
-
+	//formatResponse(w)
 	// Write success response.
 	writeSuccessNoContent(w)
 }

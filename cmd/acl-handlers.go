@@ -58,8 +58,8 @@ func (api objectAPIHandlers) GetBucketACLHandler(w http.ResponseWriter, r *http.
 
 	vars := mux.Vars(r)
 	bucket := vars["bucket"]
-
-	objAPI := api.ObjectAPI()
+	m := extractAccName(r)
+	objAPI := api.ObjectAPI(m)
 	if objAPI == nil {
 		writeErrorResponse(w, ErrServerNotInitialized, r.URL)
 		return
@@ -106,8 +106,8 @@ func (api objectAPIHandlers) GetObjectACLHandler(w http.ResponseWriter, r *http.
 	vars := mux.Vars(r)
 	bucket := vars["bucket"]
 	object := vars["object"]
-
-	objAPI := api.ObjectAPI()
+	m := extractAccName(r)
+	objAPI := api.ObjectAPI(m)
 	if objAPI == nil {
 		writeErrorResponse(w, ErrServerNotInitialized, r.URL)
 		return

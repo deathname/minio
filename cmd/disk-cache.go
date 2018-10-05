@@ -871,49 +871,49 @@ func newServerCacheObjects(config CacheConfig) (CacheObjectLayer, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	f := "testfkdr"
 	return &cacheObjects{
 		cache:    dcache,
 		exclude:  config.Exclude,
 		listPool: newTreeWalkPool(globalLookupTimeout),
 		GetObjectFn: func(ctx context.Context, bucket, object string, startOffset int64, length int64, writer io.Writer, etag string) error {
-			return newObjectLayerFn().GetObject(ctx, bucket, object, startOffset, length, writer, etag)
+			return newObjectLayerFn(f).GetObject(ctx, bucket, object, startOffset, length, writer, etag)
 		},
 		GetObjectInfoFn: func(ctx context.Context, bucket, object string) (ObjectInfo, error) {
-			return newObjectLayerFn().GetObjectInfo(ctx, bucket, object)
+			return newObjectLayerFn(f).GetObjectInfo(ctx, bucket, object)
 		},
 		PutObjectFn: func(ctx context.Context, bucket, object string, data *hash.Reader, metadata map[string]string) (objInfo ObjectInfo, err error) {
-			return newObjectLayerFn().PutObject(ctx, bucket, object, data, metadata)
+			return newObjectLayerFn(f).PutObject(ctx, bucket, object, data, metadata)
 		},
 		DeleteObjectFn: func(ctx context.Context, bucket, object string) error {
-			return newObjectLayerFn().DeleteObject(ctx, bucket, object)
+			return newObjectLayerFn(f).DeleteObject(ctx, bucket, object)
 		},
 		ListObjectsFn: func(ctx context.Context, bucket, prefix, marker, delimiter string, maxKeys int) (result ListObjectsInfo, err error) {
-			return newObjectLayerFn().ListObjects(ctx, bucket, prefix, marker, delimiter, maxKeys)
+			return newObjectLayerFn(f).ListObjects(ctx, bucket, prefix, marker, delimiter, maxKeys)
 		},
 		ListObjectsV2Fn: func(ctx context.Context, bucket, prefix, continuationToken, delimiter string, maxKeys int, fetchOwner bool, startAfter string) (result ListObjectsV2Info, err error) {
-			return newObjectLayerFn().ListObjectsV2(ctx, bucket, prefix, continuationToken, delimiter, maxKeys, fetchOwner, startAfter)
+			return newObjectLayerFn(f).ListObjectsV2(ctx, bucket, prefix, continuationToken, delimiter, maxKeys, fetchOwner, startAfter)
 		},
 		ListBucketsFn: func(ctx context.Context) (buckets []BucketInfo, err error) {
-			return newObjectLayerFn().ListBuckets(ctx)
+			return newObjectLayerFn(f).ListBuckets(ctx)
 		},
 		GetBucketInfoFn: func(ctx context.Context, bucket string) (bucketInfo BucketInfo, err error) {
-			return newObjectLayerFn().GetBucketInfo(ctx, bucket)
+			return newObjectLayerFn(f).GetBucketInfo(ctx, bucket)
 		},
 		NewMultipartUploadFn: func(ctx context.Context, bucket, object string, metadata map[string]string) (uploadID string, err error) {
-			return newObjectLayerFn().NewMultipartUpload(ctx, bucket, object, metadata)
+			return newObjectLayerFn(f).NewMultipartUpload(ctx, bucket, object, metadata)
 		},
 		PutObjectPartFn: func(ctx context.Context, bucket, object, uploadID string, partID int, data *hash.Reader) (info PartInfo, err error) {
-			return newObjectLayerFn().PutObjectPart(ctx, bucket, object, uploadID, partID, data)
+			return newObjectLayerFn(f).PutObjectPart(ctx, bucket, object, uploadID, partID, data)
 		},
 		AbortMultipartUploadFn: func(ctx context.Context, bucket, object, uploadID string) error {
-			return newObjectLayerFn().AbortMultipartUpload(ctx, bucket, object, uploadID)
+			return newObjectLayerFn(f).AbortMultipartUpload(ctx, bucket, object, uploadID)
 		},
 		CompleteMultipartUploadFn: func(ctx context.Context, bucket, object, uploadID string, uploadedParts []CompletePart) (objInfo ObjectInfo, err error) {
-			return newObjectLayerFn().CompleteMultipartUpload(ctx, bucket, object, uploadID, uploadedParts)
+			return newObjectLayerFn(f).CompleteMultipartUpload(ctx, bucket, object, uploadID, uploadedParts)
 		},
 		DeleteBucketFn: func(ctx context.Context, bucket string) error {
-			return newObjectLayerFn().DeleteBucket(ctx, bucket)
+			return newObjectLayerFn(f).DeleteBucket(ctx, bucket)
 		},
 	}, nil
 }

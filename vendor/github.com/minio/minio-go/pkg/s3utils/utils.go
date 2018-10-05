@@ -27,6 +27,7 @@ import (
 	"sort"
 	"strings"
 	"unicode/utf8"
+	"fmt"
 )
 
 // Sentinel URL is the default url value which is invalid.
@@ -36,6 +37,7 @@ var sentinelURL = url.URL{}
 func IsValidDomain(host string) bool {
 	// See RFC 1035, RFC 3696.
 	host = strings.TrimSpace(host)
+	fmt.Println(host)
 	if len(host) == 0 || len(host) > 255 {
 		return false
 	}
@@ -62,6 +64,7 @@ func IsValidDomain(host string) bool {
 
 // IsValidIP parses input string for ip address validity.
 func IsValidIP(ip string) bool {
+	fmt.Println(ip)
 	return net.ParseIP(ip) != nil
 }
 

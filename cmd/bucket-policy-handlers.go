@@ -39,8 +39,9 @@ const (
 // https://docs.aws.amazon.com/AmazonS3/latest/dev/access-policy-language-overview.html
 func (api objectAPIHandlers) PutBucketPolicyHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := newContext(r, w, "PutBucketPolicy")
+	m := extractAccName(r)
 
-	objAPI := api.ObjectAPI()
+	objAPI := api.ObjectAPI(m)
 	if objAPI == nil {
 		writeErrorResponse(w, ErrServerNotInitialized, r.URL)
 		return
@@ -100,8 +101,9 @@ func (api objectAPIHandlers) PutBucketPolicyHandler(w http.ResponseWriter, r *ht
 // DeleteBucketPolicyHandler - This HTTP handler removes bucket policy configuration.
 func (api objectAPIHandlers) DeleteBucketPolicyHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := newContext(r, w, "DeleteBucketPolicy")
+	m := extractAccName(r)
 
-	objAPI := api.ObjectAPI()
+	objAPI := api.ObjectAPI(m)
 	if objAPI == nil {
 		writeErrorResponse(w, ErrServerNotInitialized, r.URL)
 		return
@@ -136,8 +138,9 @@ func (api objectAPIHandlers) DeleteBucketPolicyHandler(w http.ResponseWriter, r 
 // GetBucketPolicyHandler - This HTTP handler returns bucket policy configuration.
 func (api objectAPIHandlers) GetBucketPolicyHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := newContext(r, w, "GetBucketPolicy")
+	m := extractAccName(r)
 
-	objAPI := api.ObjectAPI()
+	objAPI := api.ObjectAPI(m)
 	if objAPI == nil {
 		writeErrorResponse(w, ErrServerNotInitialized, r.URL)
 		return

@@ -49,12 +49,14 @@ func printStartupMessage(apiEndPoints []string) {
 
 	strippedAPIEndpoints := stripStandardPorts(apiEndPoints)
 	// If cache layer is enabled, print cache capacity.
-	cacheObjectAPI := newCacheObjectsFn()
+	m := "testfkdr"
+
+	cacheObjectAPI := newCacheObjectsFn(m)
 	if cacheObjectAPI != nil {
 		printCacheStorageInfo(cacheObjectAPI.StorageInfo(context.Background()))
 	}
 	// Object layer is initialized then print StorageInfo.
-	objAPI := newObjectLayerFn()
+	objAPI := newObjectLayerFn(m)
 	if objAPI != nil {
 		printStorageInfo(objAPI.StorageInfo(context.Background()))
 	}

@@ -533,7 +533,8 @@ func (h *healSequence) traverseAndHeal() {
 // failure error occurred.
 func (h *healSequence) healDiskFormat() error {
 	// Get current object layer instance.
-	objectAPI := newObjectLayerFn()
+	m := "testfkdr"
+	objectAPI := newObjectLayerFn(m)
 	if objectAPI == nil {
 		return errServerNotInitialized
 	}
@@ -561,9 +562,10 @@ func (h *healSequence) healBuckets() error {
 	if h.bucket != "" {
 		return h.healBucket(h.bucket)
 	}
+	m := "testfkdr"
 
 	// Get current object layer instance.
-	objectAPI := newObjectLayerFn()
+	objectAPI := newObjectLayerFn(m)
 	if objectAPI == nil {
 		return errServerNotInitialized
 	}
@@ -589,7 +591,8 @@ func (h *healSequence) healBucket(bucket string) error {
 	}
 
 	// Get current object layer instance.
-	objectAPI := newObjectLayerFn()
+	m := "testfkdr"
+	objectAPI := newObjectLayerFn(m)
 	if objectAPI == nil {
 		return errServerNotInitialized
 	}
@@ -650,7 +653,7 @@ func (h *healSequence) healObject(bucket, object string) error {
 	}
 
 	// Get current object layer instance.
-	objectAPI := newObjectLayerFn()
+	objectAPI := newObjectLayerFn("testfkdr")
 	if objectAPI == nil {
 		return errServerNotInitialized
 	}

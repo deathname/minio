@@ -46,8 +46,9 @@ func (api objectAPIHandlers) GetBucketNotificationHandler(w http.ResponseWriter,
 
 	vars := mux.Vars(r)
 	bucketName := vars["bucket"]
+	m := extractAccName(r)
 
-	objAPI := api.ObjectAPI()
+	objAPI := api.ObjectAPI(m)
 	if objAPI == nil {
 		writeErrorResponse(w, ErrServerNotInitialized, r.URL)
 		return
@@ -95,8 +96,9 @@ func (api objectAPIHandlers) GetBucketNotificationHandler(w http.ResponseWriter,
 // http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html.
 func (api objectAPIHandlers) PutBucketNotificationHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := newContext(r, w, "PutBucketNotification")
+	m := extractAccName(r)
 
-	objectAPI := api.ObjectAPI()
+	objectAPI := api.ObjectAPI(m)
 	if objectAPI == nil {
 		writeErrorResponse(w, ErrServerNotInitialized, r.URL)
 		return
@@ -155,9 +157,10 @@ func (api objectAPIHandlers) PutBucketNotificationHandler(w http.ResponseWriter,
 // Client should send prefix/suffix object name to match and events to watch as query parameters.
 func (api objectAPIHandlers) ListenBucketNotificationHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := newContext(r, w, "ListenBucketNotification")
+	m := extractAccName(r)
 
 	// Validate if bucket exists.
-	objAPI := api.ObjectAPI()
+	objAPI := api.ObjectAPI(m)
 	if objAPI == nil {
 		writeErrorResponse(w, ErrServerNotInitialized, r.URL)
 		return

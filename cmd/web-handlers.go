@@ -106,7 +106,8 @@ type StorageInfoRep struct {
 
 // StorageInfo - web call to gather storage usage statistics.
 func (web *webAPIHandlers) StorageInfo(r *http.Request, args *AuthArgs, reply *StorageInfoRep) error {
-	objectAPI := web.ObjectAPI()
+	m := "testfkdr"
+	objectAPI := web.ObjectAPI(m)
 	if objectAPI == nil {
 		return toJSONError(errServerNotInitialized)
 	}
@@ -125,7 +126,8 @@ type MakeBucketArgs struct {
 
 // MakeBucket - creates a new bucket.
 func (web *webAPIHandlers) MakeBucket(r *http.Request, args *MakeBucketArgs, reply *WebGenericRep) error {
-	objectAPI := web.ObjectAPI()
+	m := "testfkdr"
+	objectAPI := web.ObjectAPI(m)
 	if objectAPI == nil {
 		return toJSONError(errServerNotInitialized)
 	}
@@ -173,7 +175,8 @@ type RemoveBucketArgs struct {
 
 // DeleteBucket - removes a bucket, must be empty.
 func (web *webAPIHandlers) DeleteBucket(r *http.Request, args *RemoveBucketArgs, reply *WebGenericRep) error {
-	objectAPI := web.ObjectAPI()
+	m := "testfkdr"
+	objectAPI := web.ObjectAPI(m)
 	if objectAPI == nil {
 		return toJSONError(errServerNotInitialized)
 	}
@@ -184,8 +187,8 @@ func (web *webAPIHandlers) DeleteBucket(r *http.Request, args *RemoveBucketArgs,
 	ctx := context.Background()
 
 	deleteBucket := objectAPI.DeleteBucket
-	if web.CacheAPI() != nil {
-		deleteBucket = web.CacheAPI().DeleteBucket
+	if web.CacheAPI(m) != nil {
+		deleteBucket = web.CacheAPI(m).DeleteBucket
 	}
 
 	if err := deleteBucket(ctx, args.BucketName); err != nil {
@@ -224,13 +227,15 @@ type WebBucketInfo struct {
 
 // ListBuckets - list buckets api.
 func (web *webAPIHandlers) ListBuckets(r *http.Request, args *WebGenericArgs, reply *ListBucketsRep) error {
-	objectAPI := web.ObjectAPI()
+	m := "testfkdr"
+
+	objectAPI := web.ObjectAPI(m)
 	if objectAPI == nil {
 		return toJSONError(errServerNotInitialized)
 	}
 	listBuckets := objectAPI.ListBuckets
-	if web.CacheAPI() != nil {
-		listBuckets = web.CacheAPI().ListBuckets
+	if web.CacheAPI(m) != nil {
+		listBuckets = web.CacheAPI(m).ListBuckets
 	}
 	authErr := webRequestAuthenticate(r)
 	if authErr != nil {
@@ -297,13 +302,14 @@ type WebObjectInfo struct {
 // ListObjects - list objects api.
 func (web *webAPIHandlers) ListObjects(r *http.Request, args *ListObjectsArgs, reply *ListObjectsRep) error {
 	reply.UIVersion = browser.UIVersion
-	objectAPI := web.ObjectAPI()
+	m := "testfkdr"
+	objectAPI := web.ObjectAPI(m)
 	if objectAPI == nil {
 		return toJSONError(errServerNotInitialized)
 	}
 	listObjects := objectAPI.ListObjects
-	if web.CacheAPI() != nil {
-		listObjects = web.CacheAPI().ListObjects
+	if web.CacheAPI(m) != nil {
+		listObjects = web.CacheAPI(m).ListObjects
 	}
 
 	// Check if anonymous (non-owner) has access to download objects.
@@ -388,13 +394,14 @@ type RemoveObjectArgs struct {
 
 // RemoveObject - removes an object, or all the objects at a given prefix.
 func (web *webAPIHandlers) RemoveObject(r *http.Request, args *RemoveObjectArgs, reply *WebGenericRep) error {
-	objectAPI := web.ObjectAPI()
+	m := "testfkdr"
+	objectAPI := web.ObjectAPI(m)
 	if objectAPI == nil {
 		return toJSONError(errServerNotInitialized)
 	}
 	listObjects := objectAPI.ListObjects
-	if web.CacheAPI() != nil {
-		listObjects = web.CacheAPI().ListObjects
+	if web.CacheAPI(m) != nil {
+		listObjects = web.CacheAPI(m).ListObjects
 	}
 	if !isHTTPRequestValid(r) {
 		return toJSONError(errAuthentication)
@@ -416,7 +423,7 @@ next:
 				}
 			}
 
-			if err = deleteObject(nil, objectAPI, web.CacheAPI(), args.BucketName, objectName, r); err != nil {
+			if err = deleteObject(nil, objectAPI, web.CacheAPI(m), args.BucketName, objectName, r); err != nil {
 				break next
 			}
 			continue
@@ -432,7 +439,7 @@ next:
 			}
 			marker = lo.NextMarker
 			for _, obj := range lo.Objects {
-				err = deleteObject(nil, objectAPI, web.CacheAPI(), args.BucketName, obj.Name, r)
+				err = deleteObject(nil, objectAPI, web.CacheAPI(m), args.BucketName, obj.Name, r)
 				if err != nil {
 					break next
 				}
@@ -534,7 +541,9 @@ func (web *webAPIHandlers) SetAuth(r *http.Request, args *SetAuthArgs, reply *Se
 	prevCred := globalServerConfig.SetCredential(creds)
 
 	// Persist updated credentials.
-	if err = saveServerConfig(newObjectLayerFn(), globalServerConfig); err != nil {
+	m := "testfkdr"
+
+	if err = saveServerConfig(newObjectLayerFn(m), globalServerConfig); err != nil {
 		// Save the current creds when failed to update.
 		globalServerConfig.SetCredential(prevCred)
 		logger.LogIf(context.Background(), err)
@@ -601,15 +610,16 @@ func (web *webAPIHandlers) CreateURLToken(r *http.Request, args *WebGenericArgs,
 
 // Upload - file upload handler.
 func (web *webAPIHandlers) Upload(w http.ResponseWriter, r *http.Request) {
-	objectAPI := web.ObjectAPI()
+	m := "testfkdr"
+	objectAPI := web.ObjectAPI(m)
 	if objectAPI == nil {
 		writeWebErrorResponse(w, errServerNotInitialized)
 		return
 	}
 
 	putObject := objectAPI.PutObject
-	if web.CacheAPI() != nil {
-		putObject = web.CacheAPI().PutObject
+	if web.CacheAPI(m) != nil {
+		putObject = web.CacheAPI(m).PutObject
 	}
 	vars := mux.Vars(r)
 	bucket := vars["bucket"]
@@ -679,7 +689,8 @@ func (web *webAPIHandlers) Upload(w http.ResponseWriter, r *http.Request) {
 
 // Download - file download handler.
 func (web *webAPIHandlers) Download(w http.ResponseWriter, r *http.Request) {
-	objectAPI := web.ObjectAPI()
+	m := "testfkdr"
+	objectAPI := web.ObjectAPI(m)
 	if objectAPI == nil {
 		writeWebErrorResponse(w, errServerNotInitialized)
 		return
@@ -705,12 +716,12 @@ func (web *webAPIHandlers) Download(w http.ResponseWriter, r *http.Request) {
 	}
 
 	getObject := objectAPI.GetObject
-	if web.CacheAPI() != nil {
-		getObject = web.CacheAPI().GetObject
+	if web.CacheAPI(m) != nil {
+		getObject = web.CacheAPI(m).GetObject
 	}
 	getObjectInfo := objectAPI.GetObjectInfo
-	if web.CacheAPI() != nil {
-		getObjectInfo = web.CacheAPI().GetObjectInfo
+	if web.CacheAPI(m) != nil {
+		getObjectInfo = web.CacheAPI(m).GetObjectInfo
 	}
 	objInfo, err := getObjectInfo(context.Background(), bucket, object)
 	if err != nil {
@@ -768,18 +779,19 @@ type DownloadZipArgs struct {
 
 // Takes a list of objects and creates a zip file that sent as the response body.
 func (web *webAPIHandlers) DownloadZip(w http.ResponseWriter, r *http.Request) {
-	objectAPI := web.ObjectAPI()
+	m := "testfkdr"
+	objectAPI := web.ObjectAPI(m)
 	if objectAPI == nil {
 		writeWebErrorResponse(w, errServerNotInitialized)
 		return
 	}
 	getObject := objectAPI.GetObject
-	if web.CacheAPI() != nil {
-		getObject = web.CacheAPI().GetObject
+	if web.CacheAPI(m) != nil {
+		getObject = web.CacheAPI(m).GetObject
 	}
 	listObjects := objectAPI.ListObjects
-	if web.CacheAPI() != nil {
-		listObjects = web.CacheAPI().ListObjects
+	if web.CacheAPI(m) != nil {
+		listObjects = web.CacheAPI(m).ListObjects
 	}
 	// Auth is done after reading the body to accommodate for anonymous requests
 	// when bucket policy is enabled.
@@ -811,8 +823,8 @@ func (web *webAPIHandlers) DownloadZip(w http.ResponseWriter, r *http.Request) {
 	archive := zip.NewWriter(w)
 	defer archive.Close()
 	getObjectInfo := objectAPI.GetObjectInfo
-	if web.CacheAPI() != nil {
-		getObjectInfo = web.CacheAPI().GetObjectInfo
+	if web.CacheAPI(m) != nil {
+		getObjectInfo = web.CacheAPI(m).GetObjectInfo
 	}
 	for _, object := range args.Objects {
 		// Writes compressed object file to the response.
@@ -910,7 +922,8 @@ type GetBucketPolicyRep struct {
 
 // GetBucketPolicy - get bucket policy for the requested prefix.
 func (web *webAPIHandlers) GetBucketPolicy(r *http.Request, args *GetBucketPolicyArgs, reply *GetBucketPolicyRep) error {
-	objectAPI := web.ObjectAPI()
+	m := "testfkdr"
+	objectAPI := web.ObjectAPI(m)
 	if objectAPI == nil {
 		return toJSONError(errServerNotInitialized)
 	}
@@ -959,7 +972,8 @@ type ListAllBucketPoliciesRep struct {
 
 // ListAllBucketPolicies - get all bucket policy.
 func (web *webAPIHandlers) ListAllBucketPolicies(r *http.Request, args *ListAllBucketPoliciesArgs, reply *ListAllBucketPoliciesRep) error {
-	objectAPI := web.ObjectAPI()
+	m := "testfkdr"
+	objectAPI := web.ObjectAPI(m)
 	if objectAPI == nil {
 		return toJSONError(errServerNotInitialized)
 	}
@@ -1004,7 +1018,8 @@ type SetBucketPolicyWebArgs struct {
 
 // SetBucketPolicy - set bucket policy.
 func (web *webAPIHandlers) SetBucketPolicy(r *http.Request, args *SetBucketPolicyWebArgs, reply *WebGenericRep) error {
-	objectAPI := web.ObjectAPI()
+	m := "testfkdr"
+	objectAPI := web.ObjectAPI(m)
 	reply.UIVersion = browser.UIVersion
 
 	if objectAPI == nil {

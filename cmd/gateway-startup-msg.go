@@ -28,7 +28,8 @@ import (
 func printGatewayStartupMessage(apiEndPoints []string, backendType string) {
 	strippedAPIEndpoints := stripStandardPorts(apiEndPoints)
 	// If cache layer is enabled, print cache capacity.
-	cacheObjectAPI := newCacheObjectsFn()
+	f := "testfkdr"
+	cacheObjectAPI := newCacheObjectsFn(f)
 	if cacheObjectAPI != nil {
 		printCacheStorageInfo(cacheObjectAPI.StorageInfo(context.Background()))
 	}

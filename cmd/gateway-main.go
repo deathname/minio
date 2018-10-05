@@ -46,10 +46,23 @@ var (
 	}
 )
 
+var AccName = []string{
+	"testfkdr",
+	"testfkdr2",
+	"dummytestfkdr",
+}
+
+var Acc = map[string]string{
+	"testfkdr2": "MovjMUm3OpM0gmvycfsndltnRIbmRQaV9yKGoK3NA/GW3Fmich7Vv23AFoo9kkydwGS2z68p5ghlnXzvMoGpFw==",
+	"testfkdr" : "vn/x+90Kw7aR+Gn4GvCy5VHwU4pCn+zuSvN9E95lu8ZoFuXpE0cTnbE2a7lqg8pPzsphR9GM2Rtl+gHgcD2eQA==",
+	"dummytestfkdr":"PoKbvBi7F0geERqfceFn1XP4/vlDrEei980CQPpnjlrhQZO7PAVJWYhN7KIuxYkEJWLBJDMkcy3uboVGlujimw==",
+}
 // RegisterGatewayCommand registers a new command for gateway.
 func RegisterGatewayCommand(cmd cli.Command) error {
+	fmt.Println("RegisterGatewayCommand")
 	cmd.Flags = append(append(cmd.Flags, append(cmd.Flags, serverFlags...)...), globalFlags...)
 	gatewayCmd.Subcommands = append(gatewayCmd.Subcommands, cmd)
+	fmt.Println(cmd.Name)
 	return nil
 }
 
@@ -97,16 +110,18 @@ func ValidateGatewayArguments(serverAddr, endpointAddr string) error {
 
 // StartGateway - handler for 'minio gateway <name>'.
 func StartGateway(ctx *cli.Context, gw Gateway) {
+	fmt.Println("StartGateway")
 	if gw == nil {
 		logger.FatalIf(errUnexpected, "Gateway implementation not initialized")
 	}
 
 	// Disable logging until gateway initialization is complete, any
 	// error during initialization will be shown as a fatal message
-	logger.Disable = true
+	logger.Disable = false
 
-	// Validate if we have access, secret set through environment.
+	// Validate if we have Access, secret set through environment.
 	gatewayName := gw.Name()
+	fmt.Println(gatewayName)
 	if ctx.Args().First() == "help" {
 		cli.ShowCommandHelpAndExit(ctx, gatewayName, 1)
 	}
@@ -126,8 +141,10 @@ func StartGateway(ctx *cli.Context, gw Gateway) {
 
 	// Fetch address option
 	gatewayAddr := ctx.GlobalString("address")
+	fmt.Println(gatewayAddr)
 	if gatewayAddr == ":"+globalMinioPort {
 		gatewayAddr = ctx.String("address")
+		fmt.Println(gatewayAddr)
 	}
 
 	// Handle common command args.
@@ -142,7 +159,7 @@ func StartGateway(ctx *cli.Context, gw Gateway) {
 	// To avoid this error situation we check for port availability.
 	logger.FatalIf(checkPortAvailability(globalMinioPort), "Unable to start the server")
 
-	// Validate if we have access, secret set through environment.
+	// Validate if we have Access, secret set through environment.
 	if !globalIsEnvCreds {
 		logger.Fatal(uiErrEnvCredentialsMissingGateway(nil), "Unable to start gateway")
 	}
@@ -166,10 +183,17 @@ func StartGateway(ctx *cli.Context, gw Gateway) {
 
 	var cacheConfig = globalServerConfig.GetCacheConfig()
 	if len(cacheConfig.Drives) > 0 {
-		var err error
-		// initialize the new disk cache objects.
-		globalCacheObjectAPI, err = newServerCacheObjects(cacheConfig)
-		logger.FatalIf(err, "Unable to initialize disk caching")
+		for i :=0 ;i<3;i++ {
+			var err error
+			// initialize the new disk cache objects.
+			myglobalCacheObjectAPI[i], err = newServerCacheObjects(cacheConfig)
+			logger.FatalIf(err, "Unable to initialize disk caching")
+		}
+
+		//var err error
+		//// initialize the new disk cache objects.
+		//globalCacheObjectAPI, err = newServerCacheObjects(cacheConfig)
+		//logger.FatalIf(err, "Unable to initialize disk caching")
 	}
 
 	// Check and load SSL certificates.
@@ -189,7 +213,7 @@ func StartGateway(ctx *cli.Context, gw Gateway) {
 	globalPolicySys = NewPolicySys()
 
 	router := mux.NewRouter().SkipClean(true)
-
+	fmt.Println(router)
 	// Add healthcheck router
 	registerHealthCheckRouter(router)
 
@@ -203,7 +227,7 @@ func StartGateway(ctx *cli.Context, gw Gateway) {
 
 	// Add API router.
 	registerAPIRouter(router)
-
+	fmt.Println(router)
 	var getCert certs.GetCertificateFunc
 	if globalTLSCerts != nil {
 		getCert = globalTLSCerts.GetCertificate
@@ -218,39 +242,100 @@ func StartGateway(ctx *cli.Context, gw Gateway) {
 
 	signal.Notify(globalOSSignalCh, os.Interrupt, syscall.SIGTERM)
 
-	newObject, err := gw.NewGatewayLayer(globalServerConfig.GetCredential())
-	if err != nil {
-		// Stop watching for any certificate changes.
-		globalTLSCerts.Stop()
+	myObj := make(map[string]ObjectLayer,3)
+	for i := 0 ; i<3 ; i++ {
+		fmt.Println("##### ",i)
+		cred := globalServerConfig.GetCredential()
+		//cred.AccessKey = AccName[i]
+		//cred.SecretKey = Acc[AccName[i]]
+		if i == 0 {
+			cred.AccessKey = "testfkdr"
+			cred.SecretKey = Acc["testfkdr"]
+		}else if i == 1 {
+			cred.AccessKey = "testfkdr2"
+			cred.SecretKey = Acc["testfkdr2"]
+		}else{
+			cred.AccessKey = "dummytestfkdr"
+			cred.SecretKey = Acc["dummytestfkdr"]
+		}
+		//globalServerConfig.SetCredential(cred)
+		fmt.Println(cred)
+		myObj[AccName[i]], err = gw.NewGatewayLayer(cred)
+		if err != nil {
+			// Stop watching for any certificate changes.
+			globalTLSCerts.Stop()
 
-		globalHTTPServer.Shutdown()
-		logger.FatalIf(err, "Unable to initialize gateway backend")
-	}
-
-	go globalPolicySys.Init(newObject)
-
-	// Once endpoints are finalized, initialize the new object api.
-	globalObjLayerMutex.Lock()
-	globalObjectAPI = newObject
-	globalObjLayerMutex.Unlock()
-
-	// Prints the formatted startup message once object layer is initialized.
-	if !quietFlag {
-		mode := globalMinioModeGatewayPrefix + gatewayName
-		// Check update mode.
-		checkUpdate(mode)
-
-		// Print a warning message if gateway is not ready for production before the startup banner.
-		if !gw.Production() {
-			logger.StartupMessage(colorYellow("               *** Warning: Not Ready for Production ***"))
+			globalHTTPServer.Shutdown()
+			logger.FatalIf(err, "Unable to initialize gateway backend")
 		}
 
-		// Print gateway startup message.
-		printGatewayStartupMessage(getAPIEndpoints(gatewayAddr), gatewayName)
+		go globalPolicySys.Init(myObj[AccName[i]])
+
+		// Once endpoints are finalized, initialize the new object api.
+		globalObjLayerMutex.Lock()
+		//myglobalObjectAPI = append(myglobalObjectAPI,myObj[AccName[i]])
+		myglobalObjectAPI[i] = myObj[AccName[i]]
+		fmt.Println("@@@@@",myglobalObjectAPI[i])
+		globalObjLayerMutex.Unlock()
+
+		// Prints the formatted startup message once object layer is initialized.
+		if !quietFlag {
+			mode := globalMinioModeGatewayPrefix + gatewayName
+			// Check update mode.
+			checkUpdate(mode)
+
+			// Print a warning message if gateway is not ready for production before the startup banner.
+			if !gw.Production() {
+				logger.StartupMessage(colorYellow("               *** Warning: Not Ready for Production ***"))
+			}
+
+			// Print gateway startup message.
+			printGatewayStartupMessage(getAPIEndpoints(gatewayAddr), gatewayName)
+			fmt.Println(gatewayAddr)
+			fmt.Println(gatewayName)
+		}
+
+		// Reenable logging
+		logger.Disable = false
+
 	}
-
-	// Reenable logging
-	logger.Disable = false
-
 	handleSignals()
+
+	//newObject, err := gw.NewGatewayLayer(globalServerConfig.GetCredential())
+	//if err != nil {
+	//	// Stop watching for any certificate changes.
+	//	globalTLSCerts.Stop()
+	//
+	//	globalHTTPServer.Shutdown()
+	//	logger.FatalIf(err, "Unable to initialize gateway backend")
+	//}
+	//
+	//go globalPolicySys.Init(newObject)
+	//
+	//// Once endpoints are finalized, initialize the new object api.
+	//globalObjLayerMutex.Lock()
+	//globalObjectAPI = newObject
+	//globalObjLayerMutex.Unlock()
+	//
+	//// Prints the formatted startup message once object layer is initialized.
+	//if !quietFlag {
+	//	mode := globalMinioModeGatewayPrefix + gatewayName
+	//	// Check update mode.
+	//	checkUpdate(mode)
+	//
+	//	// Print a warning message if gateway is not ready for production before the startup banner.
+	//	if !gw.Production() {
+	//		logger.StartupMessage(colorYellow("               *** Warning: Not Ready for Production ***"))
+	//	}
+	//
+	//	// Print gateway startup message.
+	//	printGatewayStartupMessage(getAPIEndpoints(gatewayAddr), gatewayName)
+	//	fmt.Println(gatewayAddr)
+	//	fmt.Println(gatewayName)
+	//}
+	//
+	//// Reenable logging
+	//logger.Disable = false
+	//
+	//handleSignals()
 }

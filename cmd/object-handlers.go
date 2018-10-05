@@ -57,6 +57,23 @@ var supportedHeadGetReqParams = map[string]string{
 	"response-content-disposition": "Content-Disposition",
 }
 
+/*
+
+My Object Mapper
+
+*/
+func myObjectMapper(bucket, object string) (string,string) {
+	//object = strings.Replace(object,"metafile","mymetafile",-1)
+	//object = strings.Replace(object,"manifest","mymanifest",-1)
+	//if strings.Contains(bucket,"full"){
+	//	object = "shakti_dirtree/Full/" + bucket + "/" + object
+	//} else{
+	//	object = "shakti_dirtree/catalog"
+	//}
+	//bucket = "5283875-shakti-dirtree"
+	return bucket, object
+} 
+
 // setHeadGetRespHeaders - set any requested parameters as response headers.
 func setHeadGetRespHeaders(w http.ResponseWriter, reqParams url.Values) {
 	for k, v := range reqParams {
@@ -72,22 +89,28 @@ func setHeadGetRespHeaders(w http.ResponseWriter, reqParams url.Values) {
 // on an SQL expression. In the request, along with the sql expression, you must
 // also specify a data serialization format (JSON, CSV) of the object.
 func (api objectAPIHandlers) SelectObjectContentHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("___SelectObjectContentHandler___")
+	fmt.Println(printRequest(r))
 	ctx := newContext(r, w, "SelectObject")
 	var object, bucket string
 	vars := mux.Vars(r)
 	bucket = vars["bucket"]
 	object = vars["object"]
+	m := extractAccName(r)
 
+	bucket,object = myObjectMapper(bucket,object)
+	fmt.Println("Object-Handler")
+	fmt.Println(bucket,object)
 	// Fetch object stat info.
-	objectAPI := api.ObjectAPI()
+	objectAPI := api.ObjectAPI(m)
 	if objectAPI == nil {
 		writeErrorResponse(w, ErrServerNotInitialized, r.URL)
 		return
 	}
 
 	getObjectInfo := objectAPI.GetObjectInfo
-	if api.CacheAPI() != nil {
-		getObjectInfo = api.CacheAPI().GetObjectInfo
+	if api.CacheAPI(m) != nil {
+		getObjectInfo = api.CacheAPI(m).GetObjectInfo
 	}
 
 	if s3Error := checkRequestAuthType(ctx, r, policy.GetObjectAction, bucket, object); s3Error != ErrNone {
@@ -180,8 +203,8 @@ func (api objectAPIHandlers) SelectObjectContentHandler(w http.ResponseWriter, r
 	}
 
 	getObject := objectAPI.GetObject
-	if api.CacheAPI() != nil && !crypto.SSEC.IsRequested(r.Header) {
-		getObject = api.CacheAPI().GetObject
+	if api.CacheAPI(m) != nil && !crypto.SSEC.IsRequested(r.Header) {
+		getObject = api.CacheAPI(m).GetObject
 	}
 
 	reader, pipewriter := io.Pipe()
@@ -256,9 +279,13 @@ func (api objectAPIHandlers) SelectObjectContentHandler(w http.ResponseWriter, r
 // This implementation of the GET operation retrieves object. To use GET,
 // you must have READ access to the object.
 func (api objectAPIHandlers) GetObjectHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := newContext(r, w, "GetObject")
+	fmt.Println("___GetObjectHandler___")
+	fmt.Println(printRequest(r))
 
-	objectAPI := api.ObjectAPI()
+	ctx := newContext(r, w, "GetObject")
+	m := extractAccName(r)
+
+	objectAPI := api.ObjectAPI(m)
 	if objectAPI == nil {
 		writeErrorResponse(w, ErrServerNotInitialized, r.URL)
 		return
@@ -272,9 +299,13 @@ func (api objectAPIHandlers) GetObjectHandler(w http.ResponseWriter, r *http.Req
 	bucket := vars["bucket"]
 	object := vars["object"]
 
+	bucket,object = myObjectMapper(bucket,object)
+
+	fmt.Println("Object-Handler")
+	fmt.Println(bucket,object)
 	getObjectInfo := objectAPI.GetObjectInfo
-	if api.CacheAPI() != nil {
-		getObjectInfo = api.CacheAPI().GetObjectInfo
+	if api.CacheAPI(m) != nil {
+		getObjectInfo = api.CacheAPI(m).GetObjectInfo
 	}
 
 	if s3Error := checkRequestAuthType(ctx, r, policy.GetObjectAction, bucket, object); s3Error != ErrNone {
@@ -369,8 +400,8 @@ func (api objectAPIHandlers) GetObjectHandler(w http.ResponseWriter, r *http.Req
 	setHeadGetRespHeaders(w, r.URL.Query())
 
 	getObject := objectAPI.GetObject
-	if api.CacheAPI() != nil && !crypto.SSEC.IsRequested(r.Header) && !crypto.S3.IsEncrypted(objInfo.UserDefined) {
-		getObject = api.CacheAPI().GetObject
+	if api.CacheAPI(m) != nil && !crypto.SSEC.IsRequested(r.Header) && !crypto.S3.IsEncrypted(objInfo.UserDefined) {
+		getObject = api.CacheAPI(m).GetObject
 	}
 
 	statusCodeWritten := false
@@ -420,9 +451,13 @@ func (api objectAPIHandlers) GetObjectHandler(w http.ResponseWriter, r *http.Req
 // -----------
 // The HEAD operation retrieves metadata from an object without returning the object itself.
 func (api objectAPIHandlers) HeadObjectHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := newContext(r, w, "HeadObject")
+	fmt.Println("___HeadObjectHandler___")
+	fmt.Println(printRequest(r))
 
-	objectAPI := api.ObjectAPI()
+	ctx := newContext(r, w, "HeadObject")
+	m := extractAccName(r)
+
+	objectAPI := api.ObjectAPI(m)
 	if objectAPI == nil {
 		writeErrorResponseHeadersOnly(w, ErrServerNotInitialized)
 		return
@@ -436,9 +471,13 @@ func (api objectAPIHandlers) HeadObjectHandler(w http.ResponseWriter, r *http.Re
 	bucket := vars["bucket"]
 	object := vars["object"]
 
+	bucket,object = myObjectMapper(bucket,object)
+
+	fmt.Println("Object-Handler")
+	fmt.Println(bucket,object)
 	getObjectInfo := objectAPI.GetObjectInfo
-	if api.CacheAPI() != nil {
-		getObjectInfo = api.CacheAPI().GetObjectInfo
+	if api.CacheAPI(m) != nil {
+		getObjectInfo = api.CacheAPI(m).GetObjectInfo
 	}
 
 	if s3Error := checkRequestAuthType(ctx, r, policy.GetObjectAction, bucket, object); s3Error != ErrNone {
@@ -552,9 +591,13 @@ func getCpObjMetadataFromHeader(ctx context.Context, r *http.Request, userMeta m
 // This implementation of the PUT operation adds an object to a bucket
 // while reading the object from another source.
 func (api objectAPIHandlers) CopyObjectHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := newContext(r, w, "CopyObject")
+	fmt.Println("___CopyObjectHandler___")
+	fmt.Println(printRequest(r))
 
-	objectAPI := api.ObjectAPI()
+	ctx := newContext(r, w, "CopyObject")
+	m := extractAccName(r)
+
+	objectAPI := api.ObjectAPI(m)
 	if objectAPI == nil {
 		writeErrorResponse(w, ErrServerNotInitialized, r.URL)
 		return
@@ -568,6 +611,8 @@ func (api objectAPIHandlers) CopyObjectHandler(w http.ResponseWriter, r *http.Re
 	dstBucket := vars["bucket"]
 	dstObject := vars["object"]
 
+	fmt.Println("Object-Handler")
+	fmt.Println(dstBucket,dstObject)
 	if s3Error := checkRequestAuthType(ctx, r, policy.PutObjectAction, dstBucket, dstObject); s3Error != ErrNone {
 		writeErrorResponse(w, s3Error, r.URL)
 		return
@@ -858,9 +903,13 @@ func (api objectAPIHandlers) CopyObjectHandler(w http.ResponseWriter, r *http.Re
 // ----------
 // This implementation of the PUT operation adds an object to a bucket.
 func (api objectAPIHandlers) PutObjectHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := newContext(r, w, "PutObject")
+	fmt.Println("___PutObjectHandler___")
+	fmt.Println(printRequest(r))
 
-	objectAPI := api.ObjectAPI()
+	ctx := newContext(r, w, "PutObject")
+	m := extractAccName(r)
+
+	objectAPI := api.ObjectAPI(m)
 	if objectAPI == nil {
 		writeErrorResponse(w, ErrServerNotInitialized, r.URL)
 		return
@@ -874,6 +923,9 @@ func (api objectAPIHandlers) PutObjectHandler(w http.ResponseWriter, r *http.Req
 	bucket := vars["bucket"]
 	object := vars["object"]
 
+	bucket,object = myObjectMapper(bucket,object)
+	fmt.Println("Object-Handler")
+	fmt.Println(bucket,object)
 	// X-Amz-Copy-Source shouldn't be set for this call.
 	if _, ok := r.Header["X-Amz-Copy-Source"]; ok {
 		writeErrorResponse(w, ErrInvalidCopySource, r.URL)
@@ -1026,8 +1078,8 @@ func (api objectAPIHandlers) PutObjectHandler(w http.ResponseWriter, r *http.Req
 		}
 	}
 
-	if api.CacheAPI() != nil && !hasServerSideEncryptionHeader(r.Header) {
-		putObject = api.CacheAPI().PutObject
+	if api.CacheAPI(m) != nil && !hasServerSideEncryptionHeader(r.Header) {
+		putObject = api.CacheAPI(m).PutObject
 	}
 
 	// Create the object..
@@ -1072,9 +1124,13 @@ func (api objectAPIHandlers) PutObjectHandler(w http.ResponseWriter, r *http.Req
 
 // NewMultipartUploadHandler - New multipart upload.
 func (api objectAPIHandlers) NewMultipartUploadHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := newContext(r, w, "NewMultipartUpload")
+	fmt.Println("___NewMultipartUploadHandler___")
+	fmt.Println(printRequest(r))
 
-	objectAPI := api.ObjectAPI()
+	ctx := newContext(r, w, "NewMultipartUpload")
+	m := extractAccName(r)
+
+	objectAPI := api.ObjectAPI(m)
 	if objectAPI == nil {
 		writeErrorResponse(w, ErrServerNotInitialized, r.URL)
 		return
@@ -1088,6 +1144,11 @@ func (api objectAPIHandlers) NewMultipartUploadHandler(w http.ResponseWriter, r 
 	bucket := vars["bucket"]
 	object := vars["object"]
 
+
+	bucket,object = myObjectMapper(bucket,object)
+
+	fmt.Println("Object-Handler")
+	fmt.Println(bucket,object)
 	if s3Error := checkRequestAuthType(ctx, r, policy.PutObjectAction, bucket, object); s3Error != ErrNone {
 		writeErrorResponse(w, s3Error, r.URL)
 		return
@@ -1137,8 +1198,8 @@ func (api objectAPIHandlers) NewMultipartUploadHandler(w http.ResponseWriter, r 
 	}
 
 	newMultipartUpload := objectAPI.NewMultipartUpload
-	if api.CacheAPI() != nil && !hasServerSideEncryptionHeader(r.Header) {
-		newMultipartUpload = api.CacheAPI().NewMultipartUpload
+	if api.CacheAPI(m) != nil && !hasServerSideEncryptionHeader(r.Header) {
+		newMultipartUpload = api.CacheAPI(m).NewMultipartUpload
 	}
 	uploadID, err := newMultipartUpload(ctx, bucket, object, metadata)
 	if err != nil {
@@ -1155,9 +1216,13 @@ func (api objectAPIHandlers) NewMultipartUploadHandler(w http.ResponseWriter, r 
 
 // CopyObjectPartHandler - uploads a part by copying data from an existing object as data source.
 func (api objectAPIHandlers) CopyObjectPartHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := newContext(r, w, "CopyObjectPart")
+	fmt.Println("___CopyObjectPartHandler___")
+	fmt.Println(printRequest(r))
 
-	objectAPI := api.ObjectAPI()
+	ctx := newContext(r, w, "CopyObjectPart")
+	m := extractAccName(r)
+
+	objectAPI := api.ObjectAPI(m)
 	if objectAPI == nil {
 		writeErrorResponse(w, ErrServerNotInitialized, r.URL)
 		return
@@ -1171,6 +1236,8 @@ func (api objectAPIHandlers) CopyObjectPartHandler(w http.ResponseWriter, r *htt
 	dstBucket := vars["bucket"]
 	dstObject := vars["object"]
 
+	fmt.Println("Object-Handler")
+	fmt.Println(dstBucket,dstObject)
 	if s3Error := checkRequestAuthType(ctx, r, policy.PutObjectAction, dstBucket, dstObject); s3Error != ErrNone {
 		writeErrorResponse(w, s3Error, r.URL)
 		return
@@ -1360,9 +1427,13 @@ func (api objectAPIHandlers) CopyObjectPartHandler(w http.ResponseWriter, r *htt
 
 // PutObjectPartHandler - uploads an incoming part for an ongoing multipart operation.
 func (api objectAPIHandlers) PutObjectPartHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := newContext(r, w, "PutObjectPart")
+	fmt.Println("___PutObjectPartHandler___")
+	fmt.Println(printRequest(r))
 
-	objectAPI := api.ObjectAPI()
+	ctx := newContext(r, w, "PutObjectPart")
+	m := extractAccName(r)
+
+	objectAPI := api.ObjectAPI(m)
 	if objectAPI == nil {
 		writeErrorResponse(w, ErrServerNotInitialized, r.URL)
 		return
@@ -1376,6 +1447,10 @@ func (api objectAPIHandlers) PutObjectPartHandler(w http.ResponseWriter, r *http
 	bucket := vars["bucket"]
 	object := vars["object"]
 
+	bucket,object = myObjectMapper(bucket,object)
+
+	fmt.Println("Object-Handler")
+	fmt.Println(bucket,object)
 	// X-Amz-Copy-Source shouldn't be set for this call.
 	if _, ok := r.Header["X-Amz-Copy-Source"]; ok {
 		writeErrorResponse(w, ErrInvalidCopySource, r.URL)
@@ -1548,8 +1623,8 @@ func (api objectAPIHandlers) PutObjectPartHandler(w http.ResponseWriter, r *http
 	}
 
 	putObjectPart := objectAPI.PutObjectPart
-	if api.CacheAPI() != nil && !hasServerSideEncryptionHeader(r.Header) {
-		putObjectPart = api.CacheAPI().PutObjectPart
+	if api.CacheAPI(m) != nil && !hasServerSideEncryptionHeader(r.Header) {
+		putObjectPart = api.CacheAPI(m).PutObjectPart
 	}
 	partInfo, err := putObjectPart(ctx, bucket, object, uploadID, partID, hashReader)
 	if err != nil {
@@ -1566,20 +1641,29 @@ func (api objectAPIHandlers) PutObjectPartHandler(w http.ResponseWriter, r *http
 
 // AbortMultipartUploadHandler - Abort multipart upload
 func (api objectAPIHandlers) AbortMultipartUploadHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("___AbortMultiPartUploadHandler___")
+	fmt.Println(printRequest(r))
+
 	ctx := newContext(r, w, "AbortMultipartUpload")
 
 	vars := mux.Vars(r)
 	bucket := vars["bucket"]
 	object := vars["object"]
 
-	objectAPI := api.ObjectAPI()
+	bucket,object = myObjectMapper(bucket,object)
+
+	fmt.Println("Object-Handler")
+	fmt.Println(bucket,object)
+	m := extractAccName(r)
+
+	objectAPI := api.ObjectAPI(m)
 	if objectAPI == nil {
 		writeErrorResponse(w, ErrServerNotInitialized, r.URL)
 		return
 	}
 	abortMultipartUpload := objectAPI.AbortMultipartUpload
-	if api.CacheAPI() != nil {
-		abortMultipartUpload = api.CacheAPI().AbortMultipartUpload
+	if api.CacheAPI(m) != nil {
+		abortMultipartUpload = api.CacheAPI(m).AbortMultipartUpload
 	}
 
 	if s3Error := checkRequestAuthType(ctx, r, policy.AbortMultipartUploadAction, bucket, object); s3Error != ErrNone {
@@ -1605,13 +1689,22 @@ func (api objectAPIHandlers) AbortMultipartUploadHandler(w http.ResponseWriter, 
 
 // ListObjectPartsHandler - List object parts
 func (api objectAPIHandlers) ListObjectPartsHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("___ListObjectPartHandler___")
+	fmt.Println(printRequest(r))
+
 	ctx := newContext(r, w, "ListObjectParts")
 
 	vars := mux.Vars(r)
 	bucket := vars["bucket"]
 	object := vars["object"]
 
-	objectAPI := api.ObjectAPI()
+	bucket,object = myObjectMapper(bucket,object)
+
+	fmt.Println("Object-Handler")
+	fmt.Println(bucket,object)
+	m := extractAccName(r)
+
+	objectAPI := api.ObjectAPI(m)
 	if objectAPI == nil {
 		writeErrorResponse(w, ErrServerNotInitialized, r.URL)
 		return
@@ -1645,13 +1738,19 @@ func (api objectAPIHandlers) ListObjectPartsHandler(w http.ResponseWriter, r *ht
 
 // CompleteMultipartUploadHandler - Complete multipart upload.
 func (api objectAPIHandlers) CompleteMultipartUploadHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("___CompleteMultipartUploadHandler___")
+	fmt.Println(printRequest(r))
+
 	ctx := newContext(r, w, "CompleteMultipartUpload")
 
 	vars := mux.Vars(r)
 	bucket := vars["bucket"]
 	object := vars["object"]
 
-	objectAPI := api.ObjectAPI()
+	bucket,object = myObjectMapper(bucket,object)
+	m := extractAccName(r)
+
+	objectAPI := api.ObjectAPI(m)
 	if objectAPI == nil {
 		writeErrorResponse(w, ErrServerNotInitialized, r.URL)
 		return
@@ -1700,8 +1799,8 @@ func (api objectAPIHandlers) CompleteMultipartUploadHandler(w http.ResponseWrite
 	}
 
 	completeMultiPartUpload := objectAPI.CompleteMultipartUpload
-	if api.CacheAPI() != nil {
-		completeMultiPartUpload = api.CacheAPI().CompleteMultipartUpload
+	if api.CacheAPI(m) != nil {
+		completeMultiPartUpload = api.CacheAPI(m).CompleteMultipartUpload
 	}
 	objInfo, err := completeMultiPartUpload(ctx, bucket, object, uploadID, completeParts)
 	if err != nil {
@@ -1754,13 +1853,21 @@ func (api objectAPIHandlers) CompleteMultipartUploadHandler(w http.ResponseWrite
 
 // DeleteObjectHandler - delete an object
 func (api objectAPIHandlers) DeleteObjectHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("___objectAPIHandler___")
+	fmt.Println(printRequest(r))
+
 	ctx := newContext(r, w, "DeleteObject")
 
 	vars := mux.Vars(r)
 	bucket := vars["bucket"]
 	object := vars["object"]
 
-	objectAPI := api.ObjectAPI()
+	bucket,object = myObjectMapper(bucket,object)
+	m := extractAccName(r)
+
+	fmt.Println("Object-Handler")
+	fmt.Println(bucket,object)
+	objectAPI := api.ObjectAPI(m)
 	if objectAPI == nil {
 		writeErrorResponse(w, ErrServerNotInitialized, r.URL)
 		return
@@ -1791,8 +1898,8 @@ func (api objectAPIHandlers) DeleteObjectHandler(w http.ResponseWriter, r *http.
 		}
 	} else {
 		getBucketInfo := objectAPI.GetBucketInfo
-		if api.CacheAPI() != nil {
-			getBucketInfo = api.CacheAPI().GetBucketInfo
+		if api.CacheAPI(m) != nil {
+			getBucketInfo = api.CacheAPI(m).GetBucketInfo
 		}
 		if _, err := getBucketInfo(ctx, bucket); err != nil {
 			writeErrorResponse(w, toAPIErrorCode(err), r.URL)
@@ -1804,6 +1911,6 @@ func (api objectAPIHandlers) DeleteObjectHandler(w http.ResponseWriter, r *http.
 	// Ignore delete object errors while replying to client, since we are
 	// suppposed to reply only 204. Additionally log the error for
 	// investigation.
-	deleteObject(ctx, objectAPI, api.CacheAPI(), bucket, object, r)
+	deleteObject(ctx, objectAPI, api.CacheAPI(m), bucket, object, r)
 	writeSuccessNoContent(w)
 }

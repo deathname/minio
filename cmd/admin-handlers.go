@@ -335,7 +335,8 @@ func (a adminAPIHandlers) HealHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := newContext(r, w, "Heal")
 
 	// Get object layer instance.
-	objLayer := newObjectLayerFn()
+	m := "testfkdr"
+	objLayer := newObjectLayerFn(m)
 	if objLayer == nil {
 		writeErrorResponseJSON(w, ErrServerNotInitialized, r.URL)
 		return
@@ -441,7 +442,9 @@ func (a adminAPIHandlers) GetConfigHandler(w http.ResponseWriter, r *http.Reques
 	ctx := newContext(r, w, "GetConfigHandler")
 
 	// Get current object layer instance.
-	objectAPI := newObjectLayerFn()
+	m := "testfkdr"
+
+	objectAPI := newObjectLayerFn(m)
 	if objectAPI == nil {
 		writeErrorResponseJSON(w, ErrServerNotInitialized, r.URL)
 		return
@@ -494,7 +497,9 @@ func (a adminAPIHandlers) SetConfigHandler(w http.ResponseWriter, r *http.Reques
 	ctx := newContext(r, w, "SetConfigHandler")
 
 	// Get current object layer instance.
-	objectAPI := newObjectLayerFn()
+	m := "testfkdr"
+
+	objectAPI := newObjectLayerFn(m)
 	if objectAPI == nil {
 		writeErrorResponseJSON(w, ErrServerNotInitialized, r.URL)
 		return
@@ -582,7 +587,8 @@ func (a adminAPIHandlers) UpdateCredentialsHandler(w http.ResponseWriter,
 	ctx := newContext(r, w, "UpdateCredentialsHandler")
 
 	// Get current object layer instance.
-	objectAPI := newObjectLayerFn()
+	m := "testfkdr"
+	objectAPI := newObjectLayerFn(m)
 	if objectAPI == nil {
 		writeErrorResponseJSON(w, ErrServerNotInitialized, r.URL)
 		return

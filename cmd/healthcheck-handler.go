@@ -48,8 +48,9 @@ func ReadinessCheckHandler(w http.ResponseWriter, r *http.Request) {
 // has gone into a state where it can not recover except by being restarted.
 func LivenessCheckHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := newContext(r, w, "LivenessCheckHandler")
+	m := extractAccName(r)
 
-	objLayer := newObjectLayerFn()
+	objLayer := newObjectLayerFn(m)
 	// Service not initialized yet
 	if objLayer == nil {
 		writeResponse(w, http.StatusServiceUnavailable, nil, mimeNone)

@@ -65,6 +65,7 @@ var resourceList = []string{
 }
 
 func doesPolicySignatureV2Match(formValues http.Header) APIErrorCode {
+	fmt.Println("doesPolicySignatureV2Match\n\n")
 	cred := globalServerConfig.GetCredential()
 	accessKey := formValues.Get("AWSAccessKeyId")
 	if accessKey != cred.AccessKey {
@@ -81,6 +82,7 @@ func doesPolicySignatureV2Match(formValues http.Header) APIErrorCode {
 // Escape encodedQuery string into unescaped list of query params, returns error
 // if any while unescaping the values.
 func unescapeQueries(encodedQuery string) (unescapedQueries []string, err error) {
+	fmt.Println("unescapeQuery\n\n")
 	for _, query := range strings.Split(encodedQuery, "&") {
 		var unescapedQuery string
 		unescapedQuery, err = url.QueryUnescape(query)
@@ -97,7 +99,8 @@ func unescapeQueries(encodedQuery string) (unescapedQueries []string, err error)
 // returns ErrNone if matches. S3 errors otherwise.
 func doesPresignV2SignatureMatch(r *http.Request) APIErrorCode {
 	// Access credentials.
-	cred := globalServerConfig.GetCredential()
+		fmt.Println("doesPresignV2SignatureMatch\n\n")
+		cred := globalServerConfig.GetCredential()
 
 	// r.RequestURI will have raw encoded URI as sent by the client.
 	tokens := strings.SplitN(r.RequestURI, "?", 2)
@@ -194,6 +197,8 @@ func doesPresignV2SignatureMatch(r *http.Request) APIErrorCode {
 // returns true if matches, false otherwise. if error is not nil then it is always false
 
 func validateV2AuthHeader(v2Auth string) APIErrorCode {
+	fmt.Println("validateV2AuthHeader\n\n")
+
 	if v2Auth == "" {
 		return ErrAuthHeaderEmpty
 	}
@@ -217,6 +222,7 @@ func validateV2AuthHeader(v2Auth string) APIErrorCode {
 
 	// Access credentials.
 	cred := globalServerConfig.GetCredential()
+	fmt.Println(cred)
 	if keySignFields[0] != cred.AccessKey {
 		return ErrInvalidAccessKeyID
 	}
@@ -225,6 +231,13 @@ func validateV2AuthHeader(v2Auth string) APIErrorCode {
 }
 
 func doesSignV2Match(r *http.Request) APIErrorCode {
+	//r,_ = myFunc(r)
+	r,apiError := myFormatter(r)
+	if apiError != ErrNone{
+		return apiError
+	}
+
+	fmt.Println("doesSignV2Match\n\n")
 	v2Auth := r.Header.Get("Authorization")
 
 	if apiError := validateV2AuthHeader(v2Auth); apiError != ErrNone {
@@ -255,6 +268,9 @@ func doesSignV2Match(r *http.Request) APIErrorCode {
 	}
 	v2Auth = v2Auth[len(prefix):]
 	expectedAuth := signatureV2(r.Method, encodedResource, strings.Join(unescapedQueries, "&"), r.Header)
+	fmt.Println("############")
+	fmt.Println(expectedAuth)
+	fmt.Println("############")
 	if !compareSignatureV2(v2Auth, expectedAuth) {
 		return ErrSignatureDoesNotMatch
 	}
@@ -289,6 +305,7 @@ func compareSignatureV2(sig1, sig2 string) bool {
 	// Decode signature string to binary byte-sequence representation is required
 	// as Base64 encoding of a value is not unique:
 	// For example "aGVsbG8=" and "aGVsbG8=\r" will result in the same byte slice.
+	fmt.Println("compareSignatureV2\n\n")
 	signature1, err := base64.StdEncoding.DecodeString(sig1)
 	if err != nil {
 		return false
@@ -302,6 +319,7 @@ func compareSignatureV2(sig1, sig2 string) bool {
 
 // Return canonical headers.
 func canonicalizedAmzHeadersV2(headers http.Header) string {
+	fmt.Println("canonicalizedAmzheadersV2\n\n")
 	var keys []string
 	keyval := make(map[string]string)
 	for key := range headers {
@@ -322,6 +340,7 @@ func canonicalizedAmzHeadersV2(headers http.Header) string {
 
 // Return canonical resource string.
 func canonicalizedResourceV2(encodedResource, encodedQuery string) string {
+	fmt.Println("canonicalizedResourceV2\n\n")
 	queries := strings.Split(encodedQuery, "&")
 	keyval := make(map[string]string)
 	for _, query := range queries {
@@ -361,6 +380,7 @@ func canonicalizedResourceV2(encodedResource, encodedQuery string) string {
 // - if expires string is set then string to sign includes date instead of the Date header.
 // - if expires string is empty then string to sign includes date header instead.
 func getStringToSignV2(method string, encodedResource, encodedQuery string, headers http.Header, expires string) string {
+	fmt.Println("getStringToSignV2\n\n")
 	canonicalHeaders := canonicalizedAmzHeadersV2(headers)
 	if len(canonicalHeaders) > 0 {
 		canonicalHeaders += "\n"

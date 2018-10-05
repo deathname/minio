@@ -170,8 +170,9 @@ func (receiver *peerRPCReceiver) LoadCredentials(args *AuthArgs, reply *VoidRepl
 		return err
 	}
 	objLock.RUnlock()
+	m := "testfkdr"
 
-	return globalConfigSys.Load(newObjectLayerFn())
+	return globalConfigSys.Load(newObjectLayerFn(m))
 }
 
 // NewPeerRPCServer - returns new peer RPC server.

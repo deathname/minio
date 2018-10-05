@@ -50,8 +50,9 @@ func handleSignals() {
 
 		err = globalHTTPServer.Shutdown()
 		logger.LogIf(context.Background(), err)
+		m := "testfkdr"
 
-		if objAPI := newObjectLayerFn(); objAPI != nil {
+		if objAPI := newObjectLayerFn(m); objAPI != nil {
 			oerr = objAPI.Shutdown(context.Background())
 			logger.LogIf(context.Background(), oerr)
 		}
@@ -64,7 +65,9 @@ func handleSignals() {
 		case err := <-globalHTTPServerErrorCh:
 			logger.LogIf(context.Background(), err)
 			var oerr error
-			if objAPI := newObjectLayerFn(); objAPI != nil {
+			m := "testfkdr"
+
+			if objAPI := newObjectLayerFn(m); objAPI != nil {
 				oerr = objAPI.Shutdown(context.Background())
 			}
 

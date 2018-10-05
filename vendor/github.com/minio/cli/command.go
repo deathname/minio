@@ -99,7 +99,8 @@ func (c Command) Run(ctx *Context) (err error) {
 	if len(c.Subcommands) > 0 {
 		return c.startApp(ctx)
 	}
-
+	fmt.Println(c.Name)
+	fmt.Println("Command Run()")
 	if !c.HideHelp && (HelpFlag != BoolFlag{}) {
 		// append help to flags
 		c.Flags = append(
@@ -151,7 +152,6 @@ func (c Command) Run(ctx *Context) (err error) {
 	} else {
 		err = set.Parse(ctx.Args().Tail())
 	}
-
 	nerr := normalizeFlags(c.Flags, set)
 	if nerr != nil {
 		fmt.Fprintln(ctx.App.Writer, nerr)
@@ -176,7 +176,6 @@ func (c Command) Run(ctx *Context) (err error) {
 		ShowCommandHelp(ctx, c.Name)
 		return err
 	}
-
 	if checkCommandHelp(context, c.Name) {
 		return nil
 	}
@@ -211,8 +210,9 @@ func (c Command) Run(ctx *Context) (err error) {
 	}
 
 	context.Command = c
+	fmt.Println(c.Action)
 	err = HandleAction(c.Action, context)
-
+	fmt.Println(err)
 	if err != nil {
 		HandleExitCoder(err)
 	}

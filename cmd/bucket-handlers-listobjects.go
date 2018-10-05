@@ -60,8 +60,9 @@ func (api objectAPIHandlers) ListObjectsV2Handler(w http.ResponseWriter, r *http
 
 	vars := mux.Vars(r)
 	bucket := vars["bucket"]
+	m := extractAccName(r)
 
-	objectAPI := api.ObjectAPI()
+	objectAPI := api.ObjectAPI(m)
 	if objectAPI == nil {
 		writeErrorResponse(w, ErrServerNotInitialized, r.URL)
 		return
@@ -89,8 +90,8 @@ func (api objectAPIHandlers) ListObjectsV2Handler(w http.ResponseWriter, r *http
 		return
 	}
 	listObjectsV2 := objectAPI.ListObjectsV2
-	if api.CacheAPI() != nil {
-		listObjectsV2 = api.CacheAPI().ListObjectsV2
+	if api.CacheAPI(m) != nil {
+		listObjectsV2 = api.CacheAPI(m).ListObjectsV2
 	}
 	// Inititate a list objects operation based on the input params.
 	// On success would return back ListObjectsInfo object to be
@@ -129,8 +130,9 @@ func (api objectAPIHandlers) ListObjectsV1Handler(w http.ResponseWriter, r *http
 
 	vars := mux.Vars(r)
 	bucket := vars["bucket"]
+	m := extractAccName(r)
 
-	objectAPI := api.ObjectAPI()
+	objectAPI := api.ObjectAPI(m)
 	if objectAPI == nil {
 		writeErrorResponse(w, ErrServerNotInitialized, r.URL)
 		return
@@ -155,8 +157,8 @@ func (api objectAPIHandlers) ListObjectsV1Handler(w http.ResponseWriter, r *http
 		return
 	}
 	listObjects := objectAPI.ListObjects
-	if api.CacheAPI() != nil {
-		listObjects = api.CacheAPI().ListObjects
+	if api.CacheAPI(m) != nil {
+		listObjects = api.CacheAPI(m).ListObjects
 	}
 	// Inititate a list objects operation based on the input params.
 	// On success would return back ListObjectsInfo object to be

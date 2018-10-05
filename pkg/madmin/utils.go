@@ -28,6 +28,7 @@ import (
 	sha256 "github.com/minio/sha256-simd"
 
 	"github.com/minio/minio-go/pkg/s3utils"
+	"fmt"
 )
 
 // sum256 calculate sha256 sum for an input byte array.
@@ -45,6 +46,7 @@ func jsonDecoder(body io.Reader, v interface{}) error {
 
 // getEndpointURL - construct a new endpoint.
 func getEndpointURL(endpoint string, secure bool) (*url.URL, error) {
+	fmt.Println(endpoint)
 	if strings.Contains(endpoint, ":") {
 		host, _, err := net.SplitHostPort(endpoint)
 		if err != nil {

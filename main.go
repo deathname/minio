@@ -47,7 +47,7 @@ func checkGoVersion(goVersionStr string) error {
 	if err != nil {
 		return fmt.Errorf("'%s': %s", goVersionConstraint, err)
 	}
-
+	fmt.Println("Inside checkGo")
 	goVersion, err := version.NewVersion(goVersionStr)
 	if err != nil {
 		return err
@@ -66,6 +66,6 @@ func main() {
 	if err := checkGoVersion(runtime.Version()[2:]); err != nil {
 		console.Errorln(err)
 	}
-
+	fmt.Println("Inside main()")
 	minio.Main(os.Args)
 }

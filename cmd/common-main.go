@@ -33,8 +33,14 @@ import (
 	"github.com/minio/minio/pkg/dns"
 
 	"github.com/minio/minio-go/pkg/set"
+	"fmt"
 )
 
+var account = map[string]string{
+	"testfkdr2": "MovjMUm3OpM0gmvycfsndltnRIbmRQaV9yKGoK3NA/GW3Fmich7Vv23AFoo9kkydwGS2z68p5ghlnXzvMoGpFw==",
+	"testfkdr" : "vn/x+90Kw7aR+Gn4GvCy5VHwU4pCn+zuSvN9E95lu8ZoFuXpE0cTnbE2a7lqg8pPzsphR9GM2Rtl+gHgcD2eQA==",
+	"dummytestfkdr":"PoKbvBi7F0geERqfceFn1XP4/vlDrEei980CQPpnjlrhQZO7PAVJWYhN7KIuxYkEJWLBJDMkcy3uboVGlujimw==",
+}
 // Check for updates and print a notification message
 func checkUpdate(mode string) {
 	// Its OK to ignore any errors during doUpdate() here.
@@ -84,7 +90,6 @@ func handleCommonCmdArgs(ctx *cli.Context) {
 			logger.FatalIf(errors.New("missing option"), "config-dir option must be provided")
 		}
 	}
-
 	if configDir == "" {
 		logger.FatalIf(errors.New("empty directory"), "Configuration directory cannot be empty")
 	}
@@ -92,8 +97,16 @@ func handleCommonCmdArgs(ctx *cli.Context) {
 	// Disallow relative paths, figure out absolute paths.
 	configDirAbs, err := filepath.Abs(configDir)
 	logger.FatalIf(err, "Unable to fetch absolute path for config directory %s", configDir)
+	fmt.Println(configDirAbs)
 	setConfigDir(configDirAbs)
 }
+
+func myhandleCommonEnvVars(accName string){
+	os.Setenv("MINIO_ACCESS_KEY",account[accName])
+	os.Setenv("MINIO_SECRET_KEY",account[accName])
+	handleCommonEnvVars()
+}
+
 
 func handleCommonEnvVars() {
 	// Start profiler if env is set.
@@ -103,6 +116,9 @@ func handleCommonEnvVars() {
 
 	accessKey := os.Getenv("MINIO_ACCESS_KEY")
 	secretKey := os.Getenv("MINIO_SECRET_KEY")
+	//accessKey := "testfkdr"
+	//secretKey := account["testfkdr"]
+
 	if accessKey != "" && secretKey != "" {
 		cred, err := auth.CreateCredentials(accessKey, secretKey)
 		if err != nil {

@@ -20,12 +20,13 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"fmt"
 )
 
 // objectAPIHandler implements and provides http handlers for S3 API.
 type objectAPIHandlers struct {
-	ObjectAPI func() ObjectLayer
-	CacheAPI  func() CacheObjectLayer
+	ObjectAPI func(string) ObjectLayer
+	CacheAPI  func(string) CacheObjectLayer
 }
 
 // registerAPIRouter - registers S3 compatible APIs.
@@ -43,7 +44,8 @@ func registerAPIRouter(router *mux.Router) {
 		routers = append(routers, apiRouter.Host("{bucket:.+}."+globalDomainName).Subrouter())
 	}
 	routers = append(routers, apiRouter.PathPrefix("/{bucket}").Subrouter())
-
+	fmt.Println("--->API-Router")
+	fmt.Println(routers)
 	for _, bucket := range routers {
 		// Object operations
 		// HeadObject
@@ -117,4 +119,5 @@ func registerAPIRouter(router *mux.Router) {
 
 	// If none of the routes match.
 	apiRouter.NotFoundHandler = http.HandlerFunc(httpTraceAll(notFoundHandler))
+	fmt.Println("ALL Added")
 }

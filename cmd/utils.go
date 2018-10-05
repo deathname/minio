@@ -243,6 +243,7 @@ func UTCNow() time.Time {
 
 // GenETag - generate UUID based ETag
 func GenETag() string {
+	fmt.Println("GetETag")
 	return ToS3ETag(getMD5Hash([]byte(mustGetUUID())))
 }
 
@@ -255,7 +256,7 @@ func ToS3ETag(etag string) string {
 		// Append "-1" to indicate ETag is not a checksum.
 		etag += "-1"
 	}
-
+	fmt.Println(etag)
 	return etag
 }
 

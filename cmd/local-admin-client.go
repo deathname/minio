@@ -38,7 +38,8 @@ func (lc localAdminClient) SignalService(s serviceSignal) error {
 
 // ReInitFormat - re-initialize disk format.
 func (lc localAdminClient) ReInitFormat(dryRun bool) error {
-	objectAPI := newObjectLayerFn()
+	m := "testfkdr"
+	objectAPI := newObjectLayerFn(m)
 	if objectAPI == nil {
 		return errServerNotInitialized
 	}
@@ -52,7 +53,8 @@ func (lc localAdminClient) ServerInfo() (sid ServerInfoData, e error) {
 	}
 
 	// Build storage info
-	objLayer := newObjectLayerFn()
+	m := "testfkdr"
+	objLayer := newObjectLayerFn(m)
 	if objLayer == nil {
 		return sid, errServerNotInitialized
 	}

@@ -25,6 +25,7 @@ import (
 	"github.com/minio/mc/pkg/console"
 	"github.com/minio/minio/pkg/trie"
 	"github.com/minio/minio/pkg/words"
+	"fmt"
 )
 
 // global flags for minio.
@@ -142,15 +143,17 @@ func newApp(name string) *cli.App {
 
 		os.Exit(1)
 	}
-
 	return app
 }
 
 // Main main for minio server.
 func Main(args []string) {
 	// Set the minio app name.
+	fmt.Println("Inside Main()")
 	appName := filepath.Base(args[0])
 
+	fmt.Println(args)
+	fmt.Println(appName)
 	// Run the app - exit on error.
 	if err := newApp(appName).Run(args); err != nil {
 		os.Exit(1)

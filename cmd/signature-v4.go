@@ -37,6 +37,8 @@ import (
 
 	"github.com/minio/minio-go/pkg/s3utils"
 	sha256 "github.com/minio/sha256-simd"
+	"fmt"
+	"reflect"
 )
 
 // AWS Signature Version '4' constants.
@@ -48,6 +50,7 @@ const (
 
 // getCanonicalHeaders generate a list of request headers with their values
 func getCanonicalHeaders(signedHeaders http.Header) string {
+	fmt.Println("getCanonicalheaders\n\n")
 	var headers []string
 	vals := make(http.Header)
 	for k, vv := range signedHeaders {
@@ -73,6 +76,7 @@ func getCanonicalHeaders(signedHeaders http.Header) string {
 
 // getSignedHeaders generate a string i.e alphabetically sorted, semicolon-separated list of lowercase request header names
 func getSignedHeaders(signedHeaders http.Header) string {
+	fmt.Println("doesSignedHeaders\n\n")
 	var headers []string
 	for k := range signedHeaders {
 		headers = append(headers, strings.ToLower(k))
@@ -92,6 +96,8 @@ func getSignedHeaders(signedHeaders http.Header) string {
 //  <HashedPayload>
 //
 func getCanonicalRequest(extractedSignedHeaders http.Header, payload, queryStr, urlPath, method string) string {
+	fmt.Println("getCanonicalRequest\n\n")
+
 	rawQuery := strings.Replace(queryStr, "+", "%20", -1)
 	encodedPath := s3utils.EncodePath(urlPath)
 	canonicalRequest := strings.Join([]string{
@@ -107,6 +113,8 @@ func getCanonicalRequest(extractedSignedHeaders http.Header, payload, queryStr, 
 
 // getScope generate a string of a specific date, an AWS region, and a service.
 func getScope(t time.Time, region string) string {
+	fmt.Println("getScope\n\n")
+
 	scope := strings.Join([]string{
 		t.Format(yyyymmdd),
 		region,
@@ -118,6 +126,8 @@ func getScope(t time.Time, region string) string {
 
 // getStringToSign a string based on selected query values.
 func getStringToSign(canonicalRequest string, t time.Time, scope string) string {
+	fmt.Println("getStringToSign\n\n")
+
 	stringToSign := signV4Algorithm + "\n" + t.Format(iso8601Format) + "\n"
 	stringToSign = stringToSign + scope + "\n"
 	canonicalRequestBytes := sha256.Sum256([]byte(canonicalRequest))
@@ -127,6 +137,8 @@ func getStringToSign(canonicalRequest string, t time.Time, scope string) string 
 
 // getSigningKey hmac seed to calculate final signature.
 func getSigningKey(secretKey string, t time.Time, region string) []byte {
+	fmt.Println("getSigningKey\n\n")
+
 	date := sumHMAC([]byte("AWS4"+secretKey), []byte(t.Format(yyyymmdd)))
 	regionBytes := sumHMAC(date, []byte(region))
 	service := sumHMAC(regionBytes, []byte("s3"))
@@ -136,11 +148,15 @@ func getSigningKey(secretKey string, t time.Time, region string) []byte {
 
 // getSignature final signature in hexadecimal form.
 func getSignature(signingKey []byte, stringToSign string) string {
+	fmt.Println("getSignature\n\n")
+
 	return hex.EncodeToString(sumHMAC(signingKey, []byte(stringToSign)))
 }
 
 // Check to see if Policy is signed correctly.
 func doesPolicySignatureMatch(formValues http.Header) APIErrorCode {
+	fmt.Println("doesPolicySignatureMatch\n\n")
+
 	// For SignV2 - Signature field will be valid
 	if _, ok := formValues["Signature"]; ok {
 		return doesPolicySignatureV2Match(formValues)
@@ -152,6 +168,8 @@ func doesPolicySignatureMatch(formValues http.Header) APIErrorCode {
 // are equal. The signatures are expected to be HEX encoded strings
 // according to the AWS S3 signature V4 spec.
 func compareSignatureV4(sig1, sig2 string) bool {
+	fmt.Println("compareSignatureV4\n\n")
+
 	// The CTC using []byte(str) works because the hex encoding
 	// is unique for a sequence of bytes. See also compareSignatureV2.
 	return subtle.ConstantTimeCompare([]byte(sig1), []byte(sig2)) == 1
@@ -161,6 +179,8 @@ func compareSignatureV4(sig1, sig2 string) bool {
 //     - http://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-HTTPPOSTConstructPolicy.html
 // returns ErrNone if the signature matches.
 func doesPolicySignatureV4Match(formValues http.Header) APIErrorCode {
+	fmt.Println("doesPolicySignatureV4Match\n\n")
+
 	// Access credentials.
 	cred := globalServerConfig.GetCredential()
 
@@ -198,6 +218,8 @@ func doesPolicySignatureV4Match(formValues http.Header) APIErrorCode {
 // returns ErrNone if the signature matches.
 func doesPresignedSignatureMatch(hashedPayload string, r *http.Request, region string) APIErrorCode {
 	// Access credentials.
+	fmt.Println("doesPresignSignatureMatch\n\n")
+
 	cred := globalServerConfig.GetCredential()
 
 	// Copy request
@@ -312,6 +334,8 @@ func doesPresignedSignatureMatch(hashedPayload string, r *http.Request, region s
 //     - http://docs.aws.amazon.com/AmazonS3/latest/API/sig-v4-authenticating-requests.html
 // returns ErrNone if signature matches.
 func doesSignatureMatch(hashedPayload string, r *http.Request, region string) APIErrorCode {
+	RequestFormatterV4(r,region,hashedPayload)
+	fmt.Println("doesSignatureMatch\n\n")
 	// Access credentials.
 	cred := globalServerConfig.GetCredential()
 
@@ -320,9 +344,13 @@ func doesSignatureMatch(hashedPayload string, r *http.Request, region string) AP
 
 	// Save authorization header.
 	v4Auth := req.Header.Get("Authorization")
-
 	// Parse signature version '4' header.
+	fmt.Println("@@@@@@ --- @@@@@@@")
+	fmt.Println(reflect.TypeOf(v4Auth))
+	fmt.Println("@@@@@@ --- @@@@@@@")
+
 	signV4Values, err := parseSignV4(v4Auth, region)
+	fmt.Println(signV4Values)
 	if err != ErrNone {
 		return err
 	}
@@ -365,7 +393,8 @@ func doesSignatureMatch(hashedPayload string, r *http.Request, region string) AP
 
 	// Calculate signature.
 	newSignature := getSignature(signingKey, stringToSign)
-
+	fmt.Println("#### SIGNATURE #####")
+	fmt.Println(newSignature)
 	// Verify if signature match.
 	if !compareSignatureV4(newSignature, signV4Values.Signature) {
 		return ErrSignatureDoesNotMatch

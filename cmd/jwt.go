@@ -51,6 +51,7 @@ var (
 
 func authenticateJWT(accessKey, secretKey string, expiry time.Duration) (string, error) {
 	passedCredential, err := auth.CreateCredentials(accessKey, secretKey)
+	fmt.Println("In Authentication")
 	if err != nil {
 		return "", err
 	}

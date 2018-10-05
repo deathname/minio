@@ -123,6 +123,17 @@ func NewApp() *App {
 	}
 }
 
+func PrintApp(a *App){
+	fmt.Println("App Name %s: ",a.Name)
+	fmt.Println("App Name %s: ",a.HelpName)
+	fmt.Println("App Name %s: ",a.Usage)
+	fmt.Println("App Name %s: ",a.Commands)
+	fmt.Println("App Name %s: ",a.Flags)
+	fmt.Println("App Name %s: ",a.Before)
+	fmt.Println("App Name %s: ",a.After)
+	fmt.Println("App Name %s: ",a.Metadata)
+	fmt.Println("App Name %s: ",a.Action)
+}
 // Setup runs initialization code to ensure all data structures are ready for
 // `Run` or inspection prior to `Run`.  It is internally called by `Run`, but
 // will return early if setup has already happened.
@@ -130,7 +141,7 @@ func (a *App) Setup() {
 	if a.didSetup {
 		return
 	}
-
+	fmt.Println("Inside Setup()")
 	a.didSetup = true
 
 	if a.Author != "" || a.Email != "" {
@@ -172,11 +183,13 @@ func (a *App) Setup() {
 	if a.Writer == nil {
 		a.Writer = os.Stdout
 	}
+
 }
 
 // Run is the entry point to the cli app. Parses the arguments slice and routes
 // to the proper flag/args combination
 func (a *App) Run(arguments []string) (err error) {
+	fmt.Println("Inside Run()")
 	a.Setup()
 
 	// handle the completion flag separately from the flagset since
@@ -257,6 +270,7 @@ func (a *App) Run(arguments []string) (err error) {
 		name := args.First()
 		c := a.Command(name)
 		if c != nil {
+			fmt.Println(context)
 			return c.Run(context)
 		}
 	}
@@ -264,7 +278,7 @@ func (a *App) Run(arguments []string) (err error) {
 	if a.Action == nil {
 		a.Action = helpCommand.Action
 	}
-
+	fmt.Println("Second Handle")
 	// Run default Action
 	err = HandleAction(a.Action, context)
 
@@ -491,14 +505,18 @@ func (a Author) String() string {
 // it's an ActionFunc or a func with the legacy signature for Action, the func
 // is run!
 func HandleAction(action interface{}, context *Context) (err error) {
+	fmt.Println("Inside HandleAction")
+
 	if a, ok := action.(ActionFunc); ok {
 		return a(context)
 	} else if a, ok := action.(func(*Context) error); ok {
 		return a(context)
 	} else if a, ok := action.(func(*Context)); ok { // deprecated function signature
+		fmt.Println("func(*Context)")
 		a(context)
 		return nil
 	} else {
+		fmt.Println("IV")
 		return errInvalidActionType
 	}
 }

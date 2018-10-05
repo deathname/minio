@@ -85,7 +85,8 @@ func (c *minioCollector) Collect(ch chan<- prometheus.Metric) {
 	)
 
 	// Expose cache stats only if available
-	cacheObjLayer := newCacheObjectsFn()
+	m := "testfkdr"
+	cacheObjLayer := newCacheObjectsFn(m)
 	if cacheObjLayer != nil {
 		cs := cacheObjLayer.StorageInfo(context.Background())
 		ch <- prometheus.MustNewConstMetric(
@@ -109,7 +110,8 @@ func (c *minioCollector) Collect(ch chan<- prometheus.Metric) {
 	// Expose disk stats only if applicable
 
 	// Fetch disk space info
-	objLayer := newObjectLayerFn()
+	//m := "testfkdr"
+	objLayer := newObjectLayerFn(m)
 	// Service not initialized yet
 	if objLayer == nil {
 		return
