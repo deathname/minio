@@ -28,13 +28,13 @@ func newObjectLayerFn(r string) (layer ObjectLayer) {
 	globalObjLayerMutex.RLock()
 	//layer = globalObjectAPI
 	fmt.Println("HERE")
-	if(strings.Compare(r,"testfkdr") == 0) {
-		layer = myglobalObjectAPI[0]
-	} else if(strings.Compare(r,"testfkdr2") == 0){
-		layer = myglobalObjectAPI[1]
-	} else{
-		layer = myglobalObjectAPI[2]
-	}
+	//if(strings.Compare(r,"testfkdr") == 0) {
+	//	layer = myglobalObjectAPI[0]
+	//} else if(strings.Compare(r,"testfkdr2") == 0){
+	//layer = myglobalObjectAPI[1]
+	//} else{
+	layer = myglobalObjectAPI[2]
+	//}
 	globalObjLayerMutex.RUnlock()
 	fmt.Println("!!!!!!!!--!!!!!!!")
 	fmt.Println(myglobalObjectAPI[0])

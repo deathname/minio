@@ -87,7 +87,7 @@ func initFederatorBackend(objLayer ObjectLayer) {
 My mapper
  */
 func myMapper(bucket string)(string){
-	//bucket ="5283875-shakti-dirtree"
+	bucket = "68437a4-noah-test-cfg"
 	return bucket
 }
 //

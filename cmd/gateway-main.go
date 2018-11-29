@@ -55,7 +55,7 @@ var AccName = []string{
 var Acc = map[string]string{
 	"testfkdr2": "MovjMUm3OpM0gmvycfsndltnRIbmRQaV9yKGoK3NA/GW3Fmich7Vv23AFoo9kkydwGS2z68p5ghlnXzvMoGpFw==",
 	"testfkdr" : "vn/x+90Kw7aR+Gn4GvCy5VHwU4pCn+zuSvN9E95lu8ZoFuXpE0cTnbE2a7lqg8pPzsphR9GM2Rtl+gHgcD2eQA==",
-	"dummytestfkdr":"PoKbvBi7F0geERqfceFn1XP4/vlDrEei980CQPpnjlrhQZO7PAVJWYhN7KIuxYkEJWLBJDMkcy3uboVGlujimw==",
+	"dummytestfkdr":"1k+9uY9Evm1wPW1ltmz5iaEAKf8aXobLTgXrCdgpSXIe7/4EtD9U4safAq3ClkMOIL2Yl337R3YLJRhh6r0SaA==",
 }
 // RegisterGatewayCommand registers a new command for gateway.
 func RegisterGatewayCommand(cmd cli.Command) error {

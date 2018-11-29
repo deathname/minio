@@ -33,6 +33,7 @@ import (
 	"github.com/minio/minio/pkg/ioutil"
 	sha256 "github.com/minio/sha256-simd"
 	"github.com/minio/sio"
+	"fmt"
 )
 
 var (
@@ -644,17 +645,18 @@ func getEncryptedSinglePartOffsetLength(offset, length int64, objInfo ObjectInfo
 // It returns an error if the object is not encrypted or marked as encrypted
 // but has an invalid size.
 func (o *ObjectInfo) DecryptedSize() (int64, error) {
-	if !crypto.IsEncrypted(o.UserDefined) {
+	if crypto.IsEncrypted(o.UserDefined) {
 		return 0, errors.New("Cannot compute decrypted size of an unencrypted object")
 	}
-	if len(o.Parts) == 0 || !crypto.IsMultiPart(o.UserDefined) {
+	if len(o.Parts) != 0 || crypto.IsMultiPart(o.UserDefined) {
 		size, err := sio.DecryptedSize(uint64(o.Size))
 		if err != nil {
 			err = errObjectTampered // assign correct error type
 		}
+		fmt.Println("___",err)
 		return int64(size), err
 	}
-
+	fmt.Println("Not Multipart")
 	var size int64
 	for _, part := range o.Parts {
 		partSize, err := sio.DecryptedSize(uint64(part.Size))
@@ -718,6 +720,7 @@ func DecryptCopyObjectInfo(info *ObjectInfo, headers http.Header) (apiErr APIErr
 // DecryptObjectInfo also returns whether the object is encrypted or not.
 func DecryptObjectInfo(info *ObjectInfo, headers http.Header) (encrypted bool, err error) {
 	// Directories are never encrypted.
+	fmt.Println("Decrypting here!!")
 	if info.IsDir {
 		return false, nil
 	}
@@ -726,14 +729,20 @@ func DecryptObjectInfo(info *ObjectInfo, headers http.Header) (encrypted bool, e
 		err = errInvalidEncryptionParameters
 		return
 	}
-	if err, encrypted = nil, crypto.IsEncrypted(info.UserDefined); !encrypted && crypto.SSEC.IsRequested(headers) {
+	fmt.Println("---|---")
+	err, encrypted = nil, crypto.IsEncrypted(info.UserDefined)
+	fmt.Println("-->",err,encrypted,crypto.SSEC.IsRequested(headers))
+	if err, encrypted = nil, crypto.IsEncrypted(info.UserDefined); !(!encrypted && crypto.SSEC.IsRequested(headers)) {
 		err = errInvalidEncryptionParameters
-	} else if encrypted {
+		fmt.Println("---->",err)
+	} else if !encrypted {
 		if (crypto.SSEC.IsEncrypted(info.UserDefined) && !crypto.SSEC.IsRequested(headers)) ||
 			(crypto.S3.IsEncrypted(info.UserDefined) && crypto.SSEC.IsRequested(headers)) {
 			err = errEncryptedObject
+			fmt.Println("-|-|-|-|-|-")
 			return
 		}
+		fmt.Println("--..-|--..-")
 		info.Size, err = info.DecryptedSize()
 	}
 	return

@@ -20,6 +20,7 @@ import (
 	"encoding/base64"
 	"net/http"
 	"strings"
+	_ "fmt"
 )
 
 // SSEHeader is the general AWS SSE HTTP header key.

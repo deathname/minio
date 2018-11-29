@@ -65,12 +65,12 @@ My Object Mapper
 func myObjectMapper(bucket, object string) (string,string) {
 	//object = strings.Replace(object,"metafile","mymetafile",-1)
 	//object = strings.Replace(object,"manifest","mymanifest",-1)
-	//if strings.Contains(bucket,"full"){
-	//	object = "shakti_dirtree/Full/" + bucket + "/" + object
-	//} else{
-	//	object = "shakti_dirtree/catalog"
-	//}
-	//bucket = "5283875-shakti-dirtree"
+	if strings.Contains(bucket,"full"){
+		object = "noah-test-cfg/Full/" + bucket + "/" + object
+	} else{
+		object = "noah-test-cfg/catalog"
+	}
+	bucket = "68437a4-noah-test-cfg"
 	return bucket, object
 } 
 
@@ -304,9 +304,9 @@ func (api objectAPIHandlers) GetObjectHandler(w http.ResponseWriter, r *http.Req
 	fmt.Println("Object-Handler")
 	fmt.Println(bucket,object)
 	getObjectInfo := objectAPI.GetObjectInfo
-	if api.CacheAPI(m) != nil {
-		getObjectInfo = api.CacheAPI(m).GetObjectInfo
-	}
+	//if api.CacheAPI(m) != nil {
+	//	getObjectInfo = api.CacheAPI(m).GetObjectInfo
+	//}
 
 	if s3Error := checkRequestAuthType(ctx, r, policy.GetObjectAction, bucket, object); s3Error != ErrNone {
 		if getRequestAuthType(r) == authTypeAnonymous {
@@ -335,9 +335,11 @@ func (api objectAPIHandlers) GetObjectHandler(w http.ResponseWriter, r *http.Req
 		writeErrorResponse(w, toAPIErrorCode(err), r.URL)
 		return
 	}
-
+	fmt.Println("Before Encryption")
 	if objectAPI.IsEncryptionSupported() {
+		fmt.Println("IsEncrypt")
 		if _, err = DecryptObjectInfo(&objInfo, r.Header); err != nil {
+			fmt.Println(err)
 			writeErrorResponse(w, toAPIErrorCode(err), r.URL)
 			return
 		}
@@ -377,6 +379,7 @@ func (api objectAPIHandlers) GetObjectHandler(w http.ResponseWriter, r *http.Req
 	writer = w
 	if objectAPI.IsEncryptionSupported() {
 		s3Encrypted := crypto.S3.IsEncrypted(objInfo.UserDefined)
+		fmt.Println("s3Encrypted: ",s3Encrypted)
 		if crypto.SSEC.IsRequested(r.Header) || s3Encrypted {
 			// Response writer should be limited early on for decryption upto required length,
 			// additionally also skipping mod(offset)64KiB boundaries.
@@ -403,7 +406,7 @@ func (api objectAPIHandlers) GetObjectHandler(w http.ResponseWriter, r *http.Req
 	if api.CacheAPI(m) != nil && !crypto.SSEC.IsRequested(r.Header) && !crypto.S3.IsEncrypted(objInfo.UserDefined) {
 		getObject = api.CacheAPI(m).GetObject
 	}
-
+	fmt.Println("Comeback")
 	statusCodeWritten := false
 	httpWriter := ioutil.WriteOnClose(writer)
 
@@ -414,8 +417,10 @@ func (api objectAPIHandlers) GetObjectHandler(w http.ResponseWriter, r *http.Req
 
 	// Reads the object at startOffset and writes to mw.
 	if err = getObject(ctx, bucket, object, startOffset, length, httpWriter, objInfo.ETag); err != nil {
+		fmt.Println("SSSSSS", err)
 		if !httpWriter.HasWritten() && !statusCodeWritten { // write error response only if no data or headers has been written to client yet
 			writeErrorResponse(w, toAPIErrorCode(err), r.URL)
+			fmt.Println("Heeee")
 		}
 		httpWriter.Close()
 		return
@@ -424,6 +429,7 @@ func (api objectAPIHandlers) GetObjectHandler(w http.ResponseWriter, r *http.Req
 	if err = httpWriter.Close(); err != nil {
 		if !httpWriter.HasWritten() && !statusCodeWritten { // write error response only if no data or headers has been written to client yet
 			writeErrorResponse(w, toAPIErrorCode(err), r.URL)
+			fmt.Println("Heeee1")
 			return
 		}
 	}
@@ -433,8 +439,9 @@ func (api objectAPIHandlers) GetObjectHandler(w http.ResponseWriter, r *http.Req
 	if err != nil {
 		host, port = "", ""
 	}
-
+	fmt.Println("Response-Header",w.Header())
 	// Notify object accessed via a GET request.
+	//http.ServeFile(w,r,"/Users/shakti.rajpandey/PycharmProjects/md5/quick1")
 	sendEvent(eventArgs{
 		EventName:    event.ObjectAccessedGet,
 		BucketName:   bucket,
@@ -942,6 +949,7 @@ func (api objectAPIHandlers) PutObjectHandler(w http.ResponseWriter, r *http.Req
 
 	// Get Content-Md5 sent by client and verify if valid
 	md5Bytes, err := checkValidMD5(r.Header)
+	fmt.Println("md5bytes: ", md5Bytes)
 	if err != nil {
 		writeErrorResponse(w, ErrInvalidDigest, r.URL)
 		return
@@ -974,6 +982,7 @@ func (api objectAPIHandlers) PutObjectHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
+	fmt.Println("Extracting metadata")
 	metadata, err := extractMetadata(ctx, r)
 	if err != nil {
 		writeErrorResponse(w, ErrInternalError, r.URL)
@@ -1008,6 +1017,7 @@ func (api objectAPIHandlers) PutObjectHandler(w http.ResponseWriter, r *http.Req
 		putObject = objectAPI.PutObject
 	)
 	reader = r.Body
+	fmt.Println("check rAuthType: ", rAuthType)
 	switch rAuthType {
 	default:
 		// For all unknown auth types return error.
@@ -1047,7 +1057,7 @@ func (api objectAPIHandlers) PutObjectHandler(w http.ResponseWriter, r *http.Req
 			sha256hex = getContentSha256Cksum(r)
 		}
 	}
-
+	fmt.Println("new header")
 	hashReader, err := hash.NewReader(reader, size, md5hex, sha256hex)
 	if err != nil {
 		writeErrorResponse(w, toAPIErrorCode(err), r.URL)
@@ -1062,14 +1072,18 @@ func (api objectAPIHandlers) PutObjectHandler(w http.ResponseWriter, r *http.Req
 		}
 	}
 
+	fmt.Println("Checking if encrypt: ", objectAPI.IsEncryptionSupported())
+
 	if objectAPI.IsEncryptionSupported() {
 		if hasServerSideEncryptionHeader(r.Header) && !hasSuffix(object, slashSeparator) { // handle SSE requests
 			reader, err = EncryptRequest(hashReader, r, bucket, object, metadata)
+			fmt.Println("reader: ",reader)
 			if err != nil {
 				writeErrorResponse(w, toAPIErrorCode(err), r.URL)
 				return
 			}
 			info := ObjectInfo{Size: size}
+			fmt.Println("info: ",info)
 			hashReader, err = hash.NewReader(reader, info.EncryptedSize(), "", "") // do not try to verify encrypted content
 			if err != nil {
 				writeErrorResponse(w, toAPIErrorCode(err), r.URL)
@@ -1078,6 +1092,7 @@ func (api objectAPIHandlers) PutObjectHandler(w http.ResponseWriter, r *http.Req
 		}
 	}
 
+	fmt.Println("Checked if encrypted.")
 	if api.CacheAPI(m) != nil && !hasServerSideEncryptionHeader(r.Header) {
 		putObject = api.CacheAPI(m).PutObject
 	}
@@ -1092,9 +1107,11 @@ func (api objectAPIHandlers) PutObjectHandler(w http.ResponseWriter, r *http.Req
 	w.Header().Set("ETag", "\""+objInfo.ETag+"\"")
 	if objectAPI.IsEncryptionSupported() {
 		if crypto.S3.IsEncrypted(objInfo.UserDefined) {
+			fmt.Println("I am SSE-C")
 			w.Header().Set(crypto.SSEHeader, crypto.SSEAlgorithmAES256)
 		}
 		if crypto.SSEC.IsRequested(r.Header) {
+			fmt.Println("I am SSE-C")
 			w.Header().Set(crypto.SSECAlgorithm, r.Header.Get(crypto.SSECAlgorithm))
 			w.Header().Set(crypto.SSECKeyMD5, r.Header.Get(crypto.SSECKeyMD5))
 		}

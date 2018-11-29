@@ -30,6 +30,7 @@ import (
 	"github.com/minio/minio/cmd/logger"
 	"github.com/minio/minio/pkg/handlers"
 	httptracer "github.com/minio/minio/pkg/handlers"
+	"fmt"
 )
 
 // Parses location constraint from the incoming reader.
@@ -191,7 +192,7 @@ func extractReqParams(r *http.Request) map[string]string {
 
 // Extract response elements to be sent with event notifiation.
 func extractRespElements(w http.ResponseWriter) map[string]string {
-
+	fmt.Println("Content-Length",w.Header().Get("Content-Length"))
 	return map[string]string{
 		"content-length": w.Header().Get("Content-Length"),
 		// Add more fields here.
